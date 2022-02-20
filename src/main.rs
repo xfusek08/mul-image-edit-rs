@@ -1,10 +1,10 @@
 
-mod components;
-
-use components::App;
+mod data;
+mod app;
+mod ui;
 
 fn main() {
-    let app = App::default();
+    let app = app::App::default();
     let options = eframe::NativeOptions {
         drag_and_drop_support: true,
         ..Default::default()
