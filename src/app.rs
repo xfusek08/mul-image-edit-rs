@@ -1,11 +1,13 @@
 
 use eframe::epi;
 use eframe::egui;
+use crate::data::Track;
+use crate::data::TrackAnalyzer;
 use crate::ui::*;
 
 #[derive(Default)]
 pub struct App {
-    loaded_files : Vec<String>,
+    analyzer : Option<TrackAnalyzer>,
     pixels_per_point: Option<f32>, // TODO load this value from config file
 }
 
@@ -16,21 +18,14 @@ impl epi::App for App {
         #[cfg(debug_assertions)]
         self.debug_before(ctx, frame);
         
-        egui::CentralPanel::default().show(ctx, |ui| {
-            for file_name in &mut self.loaded_files {
-                ui.add(egui::TextEdit::singleline(file_name)
-                    .hint_text("Write something here")
-                    .desired_width(f32::INFINITY)
-                );
-            }
-        });
+        egui::CentralPanel::default().show(ctx, |ui| self.ui(ui));
         
         #[cfg(debug_assertions)]
         self.debug_after(ctx, frame);
         
-        let mut drops = handle_dropped_files(ctx);
+        let drops = handle_dropped_files(ctx);
         if !drops.is_empty() {
-            self.loaded_files.append(&mut drops);
+            self.setTrackFromFile(drops[0].as_str());
         }
     }
     
@@ -40,6 +35,28 @@ impl epi::App for App {
 }
 
 impl App {
+    
+    // rendering of current state with possible calling of setters when input changes
+    fn ui(&mut self, ui : &mut egui::Ui) {
+        if let Some(analyzer) = &self.analyzer {
+            match &analyzer.track {
+                Track::Invalid {path, message} => {
+                    ui.label(format!("Track {} is invalid: {}", path.display(), message));
+                },
+                Track::Valid { path, format, file } => {
+                    ui.label(format!("Track {} is valid of type: {}", path.display(), format));
+                },
+            }
+        }
+    }
+    
+    fn setTrackFromFile(&mut self, s : &str) {
+        // TODO: properly handle potentially running already existing tract analyzer -> graceful termination
+        
+        self.analyzer = Some(TrackAnalyzer::new(Track::from_file(s)));
+        
+        // TODO: initialize analyzing the track
+    }
     
     #[cfg(debug_assertions)]
     /// Function rendering backend debug panel only for debug builds
