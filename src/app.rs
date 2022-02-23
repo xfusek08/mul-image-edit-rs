@@ -1,31 +1,48 @@
 
+use eframe::epaint::Rounding;
+use eframe::epaint::Shadow;
+use eframe::epaint::Vec2;
 use eframe::epi;
 use eframe::egui;
+
 use crate::data::Track;
 use crate::data::TrackAnalyzer;
+use crate::data::TrackLoadingError;
 use crate::ui::*;
+use crate::utils::load_input_file;
 
 #[derive(Default)]
 pub struct App {
-    analyzer : Option<TrackAnalyzer>,
+    analyzer: Option<TrackAnalyzer>,
+    track_error: Option<TrackLoadingError>,
     pixels_per_point: Option<f32>, // TODO load this value from config file
 }
 
 impl epi::App for App {
     
-    fn update(&mut self, ctx: &eframe::egui::CtxRef, frame: &epi::Frame) {
+    fn setup(&mut self, ctx: &egui::Context, _frame: &epi::Frame, _storage: Option<&dyn epi::Storage>) {
+        let mut visuals = egui::Visuals::dark();
+        
+        // settings common theme
+        visuals.widgets.inactive.rounding = Rounding::same(5.0);
+        visuals.widgets.active.rounding = Rounding::same(5.0);
+        
+        ctx.set_visuals(visuals);
+    }
+    
+    fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         
         #[cfg(debug_assertions)]
         self.debug_before(ctx, frame);
         
-        egui::CentralPanel::default().show(ctx, |ui| self.ui(ui));
+        self.layout(ctx, frame);
         
         #[cfg(debug_assertions)]
         self.debug_after(ctx, frame);
         
         let drops = handle_dropped_files(ctx);
         if !drops.is_empty() {
-            self.setTrackFromFile(drops[0].as_str());
+            self.set_track_from_file(drops[0].as_str());
         }
     }
     
@@ -36,31 +53,71 @@ impl epi::App for App {
 
 impl App {
     
-    // rendering of current state with possible calling of setters when input changes
-    fn ui(&mut self, ui : &mut egui::Ui) {
-        if let Some(analyzer) = &self.analyzer {
-            match &analyzer.track {
-                Track::Invalid {path, message} => {
-                    ui.label(format!("Track {} is invalid: {}", path.display(), message));
-                },
-                Track::Valid { path, format, file } => {
-                    ui.label(format!("Track {} is valid of type: {}", path.display(), format));
-                },
-            }
+    fn layout(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
+        let quad_height = ctx.available_rect().height() / 4.0;
+        
+        // top panel -> tack overview
+        egui::TopBottomPanel::top("track_panel")
+            .frame(egui::Frame::default()
+                .margin(egui::style::Margin::same(20.0))
+                .fill(egui::Visuals::dark().faint_bg_color)
+                .shadow(Shadow::small_dark())
+            )
+            .resizable(false)
+            .default_height(quad_height)
+            .show(ctx, |ui| {
+                
+                ui.spacing_mut().button_padding = Vec2::new(10.0, 5.0);
+                
+                match &mut self.analyzer {
+                    
+                    // Render track placeholder or error when track is not valid and load file if those ui component requests it
+                    None => {
+                        let action = match &self.track_error {
+                            Some(error) => InvalidTrackPanel::ui(ui, error),
+                            None                         => EmptyTrackPanel::ui(ui),
+                        };
+                        if let TrackPanelResult::OpenFile = action {
+                            self.load_file();
+                        }
+                    },
+                    
+                    // Render track info from track held by track analyzer
+                    Some(analyzer) => match TrackPanel::ui(ui, analyzer.get_track()) {
+                        TrackPanelResult::None     => (),
+                        TrackPanelResult::OpenFile => self.load_file(),
+                        TrackPanelResult::Analyze  => analyzer.start(),
+                    }
+                }
+            });
+            
+        
+        // // central panel -> tack segment list
+        // egui::CentralPanel::default().show(ctx, |ui| {
+            
+        // });
+    }
+    
+    fn set_track_from_file(&mut self, s : &str) {
+        
+        // TODO: properly handle potentially running already existing tract analyzer -> graceful termination
+        self.analyzer = None;
+        
+        match Track::from_file(s) {
+            Ok(track)            => self.analyzer = Some(TrackAnalyzer::new(track)),
+            Err(error) => self.track_error = Some(error),
         }
     }
     
-    fn setTrackFromFile(&mut self, s : &str) {
-        // TODO: properly handle potentially running already existing tract analyzer -> graceful termination
-        
-        self.analyzer = Some(TrackAnalyzer::new(Track::from_file(s)));
-        
-        // TODO: initialize analyzing the track
+    fn load_file(&mut self) {
+        if let Some(file_name) = load_input_file() {
+            self.set_track_from_file(&file_name);
+        }
     }
     
     #[cfg(debug_assertions)]
     /// Function rendering backend debug panel only for debug builds
-    fn debug_before(&mut self, ctx: &eframe::egui::CtxRef, frame: &epi::Frame) {
+    fn debug_before(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(false)
             .min_height(0.0)
@@ -105,7 +162,7 @@ impl App {
     
     #[cfg(debug_assertions)]
     /// Function rendering backend debug panel only for debug builds
-    fn debug_after(&mut self, ctx: &eframe::egui::CtxRef, frame: &epi::Frame) {
+    fn debug_after(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         
     }
 }

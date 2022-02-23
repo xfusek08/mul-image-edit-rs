@@ -2,6 +2,7 @@
 mod data;
 mod app;
 mod ui;
+mod utils;
 
 fn main() {
     let app = app::App::default();
