@@ -19,9 +19,16 @@ pub enum TrackPanelResult {
 
 impl TrackPanel {
     pub fn ui(ui : &mut egui::Ui, track : &Track)  -> TrackPanelResult {
-        ui.label(BigLabel(track.file_name()));
+        let mut res = TrackPanelResult::None;
         
-        TrackPanelResult::None
+        ui.horizontal(|ui| {
+            ui.label(BigLabel(track.file_name()));
+            if ui.button(SizedText("Analyze", 20.0)).clicked() {
+                res = TrackPanelResult::Analyze;
+            }
+        });
+        
+        res
     }
 }
 

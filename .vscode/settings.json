@@ -9,6 +9,8 @@
     },
     "cSpell.words": [
         "eframe",
-        "egui"
+        "egui",
+        "epaint",
+        "noninteractive"
     ]
 }

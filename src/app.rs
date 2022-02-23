@@ -1,4 +1,5 @@
 
+use eframe::epaint::Color32;
 use eframe::epaint::Rounding;
 use eframe::epaint::Shadow;
 use eframe::epaint::Vec2;
@@ -19,6 +20,10 @@ pub struct App {
 }
 
 impl epi::App for App {
+    
+    fn name(&self) -> &str {
+        env!("CARGO_PKG_NAME")
+    }
     
     fn setup(&mut self, ctx: &egui::Context, _frame: &epi::Frame, _storage: Option<&dyn epi::Storage>) {
         let mut visuals = egui::Visuals::dark();
@@ -46,9 +51,6 @@ impl epi::App for App {
         }
     }
     
-    fn name(&self) -> &str {
-        env!("CARGO_PKG_NAME")
-    }
 }
 
 impl App {
@@ -60,8 +62,8 @@ impl App {
         egui::TopBottomPanel::top("track_panel")
             .frame(egui::Frame::default()
                 .margin(egui::style::Margin::same(20.0))
-                .fill(egui::Visuals::dark().faint_bg_color)
-                .shadow(Shadow::small_dark())
+                .fill(Color32::from_gray(27))
+                .shadow(Shadow::big_dark())
             )
             .resizable(false)
             .default_height(quad_height)
@@ -75,7 +77,7 @@ impl App {
                     None => {
                         let action = match &self.track_error {
                             Some(error) => InvalidTrackPanel::ui(ui, error),
-                            None                         => EmptyTrackPanel::ui(ui),
+                            None => EmptyTrackPanel::ui(ui),
                         };
                         if let TrackPanelResult::OpenFile = action {
                             self.load_file();
@@ -84,18 +86,30 @@ impl App {
                     
                     // Render track info from track held by track analyzer
                     Some(analyzer) => match TrackPanel::ui(ui, analyzer.get_track()) {
-                        TrackPanelResult::None     => (),
+                        TrackPanelResult::None => (),
                         TrackPanelResult::OpenFile => self.load_file(),
-                        TrackPanelResult::Analyze  => analyzer.start(),
+                        TrackPanelResult::Analyze => analyzer.start(),
                     }
                 }
             });
             
         
-        // // central panel -> tack segment list
-        // egui::CentralPanel::default().show(ctx, |ui| {
-            
-        // });
+        // central panel -> tack segment list
+        egui::CentralPanel::default()
+            .frame(egui::Frame::default()
+                .margin(egui::style::Margin::same(10.0))
+                .fill(Color32::from_gray(15))
+            )
+            .show(ctx, |ui| {
+                if let Some(analyzer) = &mut self.analyzer {
+                    egui::ScrollArea::vertical().show(ui, |ui| {
+                        for segment in &mut analyzer.segments {
+                            TrackSegmentEditor::Ui(ui, segment);
+                            ui.separator();
+                        }
+                    });
+                }
+            });
     }
     
     fn set_track_from_file(&mut self, s : &str) {
@@ -104,7 +118,7 @@ impl App {
         self.analyzer = None;
         
         match Track::from_file(s) {
-            Ok(track)            => self.analyzer = Some(TrackAnalyzer::new(track)),
+            Ok(track) => self.analyzer = Some(TrackAnalyzer::new(track)),
             Err(error) => self.track_error = Some(error),
         }
     }
