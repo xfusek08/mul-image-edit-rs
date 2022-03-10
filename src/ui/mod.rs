@@ -1,8 +1,14 @@
 
-mod handle_dropped_files;
-mod track_panel;
-mod track_segment_editor;
+mod app_ui;
+mod editor_ui;
 
-pub use handle_dropped_files::*;
-pub use track_panel::*;
-pub use track_segment_editor::*;
+pub use app_ui::*;
+pub use editor_ui::*;
+
+pub mod utils;
+
+#[cfg(debug_assertions)]
+mod debug_bottom_panel;
+
+#[cfg(debug_assertions)]
+pub use debug_bottom_panel::*;

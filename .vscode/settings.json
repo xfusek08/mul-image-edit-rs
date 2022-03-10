@@ -11,6 +11,14 @@
         "eframe",
         "egui",
         "epaint",
-        "noninteractive"
+        "Ernerfeldt",
+        "FRAMEBUFFER",
+        "glutin",
+        "indoc",
+        "noninteractive",
+        "opengl",
+        "SRGB",
+        "vsync",
+        "winit"
     ]
 }

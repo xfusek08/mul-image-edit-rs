@@ -6,8 +6,8 @@ use eframe::egui::WidgetText;
 use eframe::emath::Align;
 use eframe::epaint::FontId;
 
-use crate::data::Track;
-use crate::data::TrackLoadingError;
+use crate::data::MultimediaFile;
+use crate::data::MultimediaFileLoadingError;
 
 pub struct TrackPanel;
 pub struct InvalidTrackPanel;
@@ -18,7 +18,7 @@ pub enum TrackPanelResult {
 }
 
 impl TrackPanel {
-    pub fn ui(ui : &mut egui::Ui, track : &Track)  -> TrackPanelResult {
+    pub fn ui(ui : &mut egui::Ui, track : &MultimediaFile)  -> TrackPanelResult {
         let mut res = TrackPanelResult::None;
         
         ui.horizontal(|ui| {
@@ -33,7 +33,7 @@ impl TrackPanel {
 }
 
 impl InvalidTrackPanel {
-    pub fn ui(ui : &mut egui::Ui, load_error : &TrackLoadingError) -> TrackPanelResult {
+    pub fn ui(ui : &mut egui::Ui, load_error : &MultimediaFileLoadingError) -> TrackPanelResult {
         
         TrackPanelResult::None
     }
@@ -56,13 +56,4 @@ impl EmptyTrackPanel {
         
         res
     }
-}
-
-
-fn BigLabel(text: &str) -> impl Into<WidgetText> {
-    SizedText(text, 30.0)
-}
-
-fn SizedText(text: &str, size: f32) -> impl Into<WidgetText> {
-    RichText::new(text).font(FontId::proportional(size))
 }

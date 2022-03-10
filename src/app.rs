@@ -1,182 +1,176 @@
 
-use eframe::epaint::Color32;
-use eframe::epaint::Rounding;
-use eframe::epaint::Shadow;
-use eframe::epaint::Vec2;
-use eframe::epi;
-use eframe::egui;
+/// This file is customized combination of `pure_glow.rs` and `epi_backend.rs`:
+///     https://github.com/emilk/egui/blob/master/egui_glow/examples/pure_glow.rs
+///     https://github.com/emilk/egui/blob/master/egui_glow/src/epi_backend.rs
+///
+/// By Emil Ernerfeldt (emil.ernerfeldt@gmail.com) author of egui library.
+///
+/// Customization is allow to react to native os events and access and use raw opengl context for painting alongside the gui.
+///
 
-use crate::data::Track;
-use crate::data::TrackAnalyzer;
-use crate::data::TrackLoadingError;
-use crate::ui::*;
-use crate::utils::load_input_file;
+use glutin::{ event::WindowEvent, event_loop::ControlFlow };
+use egui_winit::winit;
 
-#[derive(Default)]
-pub struct App {
-    analyzer: Option<TrackAnalyzer>,
-    track_error: Option<TrackLoadingError>,
-    pixels_per_point: Option<f32>, // TODO load this value from config file
+use crate::{data::AppState, ui::AppUi};
+
+struct RequestRepaintEvent;
+struct GlowRepaintSignal(std::sync::Mutex<winit::event_loop::EventLoopProxy<RequestRepaintEvent>>);
+
+impl epi::backend::RepaintSignal for GlowRepaintSignal {
+    fn request_repaint(&self) {
+        self.0.lock().unwrap().send_event(RequestRepaintEvent).ok();
+    }
 }
 
-impl epi::App for App {
+/// Creates an opengl window and gl context
+fn create_gl_display(
+    window_builder: winit::window::WindowBuilder,
+    event_loop: &winit::event_loop::EventLoop<RequestRepaintEvent>,
+) -> (
+    glutin::WindowedContext<glutin::PossiblyCurrent>,
+    glow::Context,
+) {
+    let gl_window = unsafe {
+        glutin::ContextBuilder::new()
+            .with_depth_buffer(0)
+            .with_srgb(true)
+            .with_stencil_buffer(0)
+            .with_vsync(true)
+            .build_windowed(window_builder, event_loop)
+            .unwrap()
+            .make_current()
+            .unwrap()
+    };
     
-    fn name(&self) -> &str {
-        env!("CARGO_PKG_NAME")
+    let gl = unsafe { glow::Context::from_loader_function(|s| gl_window.get_proc_address(s)) };
+    
+    unsafe {
+        use glow::HasContext as _;
+        gl.enable(glow::FRAMEBUFFER_SRGB);
     }
     
-    fn setup(&mut self, ctx: &egui::Context, _frame: &epi::Frame, _storage: Option<&dyn epi::Storage>) {
-        let mut visuals = egui::Visuals::dark();
-        
-        // settings common theme
-        visuals.widgets.inactive.rounding = Rounding::same(5.0);
-        visuals.widgets.active.rounding = Rounding::same(5.0);
-        
-        ctx.set_visuals(visuals);
-    }
+    (gl_window, gl)
+}
+
+/// main entrypoint of application
+pub fn run(name : &str, native_options: &epi::NativeOptions) -> ! {
     
-    fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
-        
-        #[cfg(debug_assertions)]
-        self.debug_before(ctx, frame);
-        
-        self.layout(ctx, frame);
-        
-        #[cfg(debug_assertions)]
-        self.debug_after(ctx, frame);
-        
-        let drops = handle_dropped_files(ctx);
-        if !drops.is_empty() {
-            self.set_track_from_file(drops[0].as_str());
+    let persistence = egui_winit::epi::Persistence::from_app_name(name);
+    let window_settings = persistence.load_window_settings();
+    let window_builder = egui_winit::epi::window_builder(native_options, &window_settings).with_title(name);
+    let event_loop = winit::event_loop::EventLoop::with_user_event();
+    let (gl_window, gl) = create_gl_display(window_builder, &event_loop);
+    let repaint_signal = std::sync::Arc::new(GlowRepaintSignal(std::sync::Mutex::new(event_loop.create_proxy())));
+    let mut app = App::new(gl_window.window(), repaint_signal);
+    let mut egui_glow = egui_glow::EguiGlow::new(gl_window.window(), &gl);
+    
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = match event {
+            glutin::event::Event::RedrawEventsCleared if cfg!(windows) => app.draw(&gl_window, &gl, &mut egui_glow),
+            glutin::event::Event::RedrawRequested(_) if !cfg!(windows) => app.draw(&gl_window, &gl, &mut egui_glow),
+            glutin::event::Event::WindowEvent { event, .. } => app.update(event, &gl_window, &gl, &mut egui_glow),
+            glutin::event::Event::LoopDestroyed => {
+                egui_glow.destroy(&gl);
+                *control_flow
+            },
+            winit::event::Event::UserEvent(RequestRepaintEvent) => {
+                gl_window.window().request_redraw();
+                *control_flow
+            },
+            _ => *control_flow,
         }
-    }
-    
+    });
+}
+
+pub struct App {
+    frame: epi::Frame,
+    state: AppState,
 }
 
 impl App {
     
-    fn layout(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
-        let quad_height = ctx.available_rect().height() / 4.0;
-        
-        // top panel -> tack overview
-        egui::TopBottomPanel::top("track_panel")
-            .frame(egui::Frame::default()
-                .margin(egui::style::Margin::same(20.0))
-                .fill(Color32::from_gray(27))
-                .shadow(Shadow::big_dark())
-            )
-            .resizable(false)
-            .default_height(quad_height)
-            .show(ctx, |ui| {
-                
-                ui.spacing_mut().button_padding = Vec2::new(10.0, 5.0);
-                
-                match &mut self.analyzer {
-                    
-                    // Render track placeholder or error when track is not valid and load file if those ui component requests it
-                    None => {
-                        let action = match &self.track_error {
-                            Some(error) => InvalidTrackPanel::ui(ui, error),
-                            None => EmptyTrackPanel::ui(ui),
-                        };
-                        if let TrackPanelResult::OpenFile = action {
-                            self.load_file();
-                        }
-                    },
-                    
-                    // Render track info from track held by track analyzer
-                    Some(analyzer) => match TrackPanel::ui(ui, analyzer.get_track()) {
-                        TrackPanelResult::None => (),
-                        TrackPanelResult::OpenFile => self.load_file(),
-                        TrackPanelResult::Analyze => analyzer.start(),
-                    }
-                }
-            });
-            
-        
-        // central panel -> tack segment list
-        egui::CentralPanel::default()
-            .frame(egui::Frame::default()
-                .margin(egui::style::Margin::same(10.0))
-                .fill(Color32::from_gray(15))
-            )
-            .show(ctx, |ui| {
-                if let Some(analyzer) = &mut self.analyzer {
-                    egui::ScrollArea::vertical().show(ui, |ui| {
-                        for segment in &mut analyzer.segments {
-                            TrackSegmentEditor::Ui(ui, segment);
-                            ui.separator();
-                        }
-                    });
-                }
-            });
-    }
-    
-    fn set_track_from_file(&mut self, s : &str) {
-        
-        // TODO: properly handle potentially running already existing tract analyzer -> graceful termination
-        self.analyzer = None;
-        
-        match Track::from_file(s) {
-            Ok(track) => self.analyzer = Some(TrackAnalyzer::new(track)),
-            Err(error) => self.track_error = Some(error),
+    /// Constructor
+    /// Builds an app which is gl context and main window
+    pub fn new(
+        window: &winit::window::Window,
+        repaint_signal: std::sync::Arc<dyn epi::backend::RepaintSignal>,
+    ) -> Self {
+        App {
+            frame: epi::Frame::new(epi::backend::FrameData {
+                info: epi::IntegrationInfo {
+                    name: "custom_glow",
+                    web_info: None,
+                    prefer_dark_mode: Some(true),
+                    cpu_usage: None,
+                    native_pixels_per_point: Some(window.scale_factor() as f32),
+                },
+                output: Default::default(),
+                repaint_signal,
+            }),
+            state: AppState::default(),
         }
     }
     
-    fn load_file(&mut self) {
-        if let Some(file_name) = load_input_file() {
-            self.set_track_from_file(&file_name);
+    /// Redraws new frame
+    pub fn draw(&mut self,
+        gl_window: &glutin::WindowedContext<glutin::PossiblyCurrent>,
+        gl: &glow::Context,
+        egui_glow: &mut egui_glow::EguiGlow,
+    ) -> ControlFlow {
+        
+        let clear_color = [0.1, 0.1, 0.1];
+        
+        let frame = &self.frame;
+        let ui_state = &mut self.state;
+        
+        let needs_repaint = egui_glow.run(gl_window.window(), |egui_ctx| {
+            AppUi::ui(ui_state, egui_ctx, frame);
+        });
+        
+        // OpenGL drawing
+        
+        unsafe {
+            use glow::HasContext as _;
+            gl.clear_color(clear_color[0], clear_color[1], clear_color[2], 1.0);
+            gl.clear(glow::COLOR_BUFFER_BIT);
+        }
+        
+        // background openGL calls goes here
+        
+        // gui drawing
+        egui_glow.paint(gl_window.window(), &gl);
+        
+        // swap buffers
+        gl_window.swap_buffers().unwrap();
+        
+        // return control flow
+        if ui_state.should_quit {
+            ControlFlow::Exit
+        } else if needs_repaint {
+            ControlFlow::Poll
+        } else {
+            ControlFlow::Wait
         }
     }
     
-    #[cfg(debug_assertions)]
-    /// Function rendering backend debug panel only for debug builds
-    fn debug_before(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
-        egui::TopBottomPanel::bottom("bottom_panel")
-            .resizable(false)
-            .min_height(0.0)
-            .show(ctx,|ui| {
-                let mut debug_on_hover = ui.ctx().debug_on_hover();
-                let pixels_per_point = self.pixels_per_point.get_or_insert_with(|| {
-                    frame.info().native_pixels_per_point.unwrap_or_else(|| ui.ctx().pixels_per_point())
-                });
+    /// Reacts to window events and updates
+    pub fn update(&mut self,
+        event:  WindowEvent,
+        gl_window: &glutin::WindowedContext<glutin::PossiblyCurrent>,
+        gl: &glow::Context,
+        egui_glow: &mut egui_glow::EguiGlow,
+    ) -> ControlFlow {
+        if matches!(event, WindowEvent::CloseRequested | WindowEvent::Destroyed) {
+            return glutin::event_loop::ControlFlow::Exit;
+        }
         
-                ui.horizontal(|ui| {
-                    ui.checkbox(&mut debug_on_hover, "🐛 Debug on hover");
-                    ui.separator();
-                    ui.spacing_mut().slider_width = 90.0;
-                    ui.add(
-                        egui::Slider::new(pixels_per_point, 0.5..=1.6)
-                            .logarithmic(true)
-                            .clamp_to_range(true)
-                            .text("Scale"),
-                    )
-                    .on_hover_text("Physical pixels per point.");
-                    if let Some(native_pixels_per_point) = frame.info().native_pixels_per_point {
-                        let enabled = *pixels_per_point != native_pixels_per_point;
-                        if ui
-                            .add_enabled(enabled, egui::Button::new("Reset"))
-                            .on_hover_text(format!(
-                                "Reset scale to native value ({:.1})",
-                                native_pixels_per_point
-                            ))
-                            .clicked()
-                        {
-                            *pixels_per_point = native_pixels_per_point;
-                        }
-                    }
-                });
-                
-                if !ui.ctx().is_using_pointer() {
-                    ui.ctx().set_pixels_per_point(*pixels_per_point);
-                }
-                ui.ctx().set_debug_on_hover(debug_on_hover);
-            });
-    }
-    
-    #[cfg(debug_assertions)]
-    /// Function rendering backend debug panel only for debug builds
-    fn debug_after(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
+        if let glutin::event::WindowEvent::Resized(physical_size) = event {
+            gl_window.resize(physical_size);
+        }
         
+        egui_glow.on_event(&event);
+        gl_window.window().request_redraw(); // TODO: ask egui if the events warrants a repaint instead
+        
+        ControlFlow::Poll
     }
 }

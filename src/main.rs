@@ -1,14 +1,13 @@
 
 mod data;
-mod app;
 mod ui;
+mod app;
 mod utils;
 
 fn main() {
-    let app = app::App::default();
-    let options = eframe::NativeOptions {
+    let options = epi::NativeOptions {
         drag_and_drop_support: true,
         ..Default::default()
     };
-    eframe::run_native(Box::new(app), options);
+    app::run("Image - Editor", &options);
 }
