@@ -68,7 +68,13 @@ pub fn run(name : &str, native_options: &epi::NativeOptions) -> ! {
         *control_flow = match event {
             glutin::event::Event::RedrawEventsCleared if cfg!(windows) => app.draw(&gl_window, &gl, &mut egui_glow),
             glutin::event::Event::RedrawRequested(_) if !cfg!(windows) => app.draw(&gl_window, &gl, &mut egui_glow),
-            glutin::event::Event::WindowEvent { event, .. } => app.update(event, &gl_window, &gl, &mut egui_glow),
+            glutin::event::Event::WindowEvent { event, .. } =>  {
+                if app.update(event, &gl_window, &gl, &mut egui_glow) == ControlFlow::Exit {
+                    ControlFlow::Exit
+                } else {
+                    *control_flow
+                }
+            }
             glutin::event::Event::LoopDestroyed => {
                 egui_glow.destroy(&gl);
                 *control_flow

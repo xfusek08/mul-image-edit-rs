@@ -18,6 +18,7 @@
         "noninteractive",
         "opengl",
         "SRGB",
+        "unmultiplied",
         "vsync",
         "winit"
     ]

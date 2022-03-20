@@ -50,6 +50,10 @@ impl MultimediaFile {
         self.file_name.clone()
     }
     
+    pub fn size(&self) -> u64 {
+        self.file.metadata().unwrap().len()
+    }
+    
     pub fn bytes(&mut self) -> Vec<u8> {
         let metadata = self.file.metadata().expect("unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];

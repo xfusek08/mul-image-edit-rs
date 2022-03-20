@@ -40,12 +40,6 @@ impl AppUi {
                 ui.label(BigText("Select image to edit"));
                 Self::open_file_dialog(state, ui);
             });
-            
-        }
-        
-        let drops = Self::handle_dropped_files(ctx);
-        if !drops.is_empty() {
-            state.load_image_from_file_name(drops[0].as_str());
         }
     }
     
@@ -54,6 +48,10 @@ impl AppUi {
             if let Some(file_name) = load_input_file() {
                 state.load_image_from_file_name(file_name.as_str());
             }
+        }
+        let drops = Self::handle_dropped_files(ui.ctx());
+        if !drops.is_empty() {
+            state.load_image_from_file_name(drops[0].as_str());
         }
     }
     
