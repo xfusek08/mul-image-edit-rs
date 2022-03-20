@@ -1,6 +1,8 @@
 
+use crate::constants;
+
 pub fn load_input_file() -> Option<String> {
-    let extensions: Vec<&str> = crate::data::constants::SUPPORTED_MULTIMEDIA_FILE_FORMATS
+    let extensions: Vec<&str> = constants::SUPPORTED_MULTIMEDIA_FILE_FORMATS
         .iter()
         .map(|f| f.extension())
         .collect();

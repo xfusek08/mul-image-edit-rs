@@ -1,7 +1,9 @@
 
-mod data;
-mod ui;
 mod app;
+mod data;
+mod constants;
+mod components;
+mod widgets;
 mod utils;
 
 fn main() {

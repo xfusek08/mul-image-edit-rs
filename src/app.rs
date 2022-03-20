@@ -1,17 +1,19 @@
 
-/// This file is customized combination of `pure_glow.rs` and `epi_backend.rs`:
-///     https://github.com/emilk/egui/blob/master/egui_glow/examples/pure_glow.rs
-///     https://github.com/emilk/egui/blob/master/egui_glow/src/epi_backend.rs
-///
-/// By Emil Ernerfeldt (emil.ernerfeldt@gmail.com) author of egui library.
-///
-/// Customization is allow to react to native os events and access and use raw opengl context for painting alongside the gui.
-///
+//!
+//! This file is customized combination of `pure_glow.rs` and `epi_backend.rs`:
+//!     https://github.com/emilk/egui/blob/master/egui_glow/examples/pure_glow.rs
+//!     https://github.com/emilk/egui/blob/master/egui_glow/src/epi_backend.rs
+//!
+//! By Emil Ernerfeldt (emil.ernerfeldt@gmail.com) author of egui library.
+//!
+//! Customization was done to allow reacting to native os events and access and use raw opengl context for painting alongside the gui.
+//!
 
+use std::time::Instant;
 use glutin::{ event::WindowEvent, event_loop::ControlFlow };
 use egui_winit::winit;
 
-use crate::{data::AppState, ui::AppUi};
+use crate::components::App as AppComponent;
 
 struct RequestRepaintEvent;
 struct GlowRepaintSignal(std::sync::Mutex<winit::event_loop::EventLoopProxy<RequestRepaintEvent>>);
@@ -65,32 +67,20 @@ pub fn run(name : &str, native_options: &epi::NativeOptions) -> ! {
     let mut egui_glow = egui_glow::EguiGlow::new(gl_window.window(), &gl);
     
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = match event {
-            glutin::event::Event::RedrawEventsCleared if cfg!(windows) => app.draw(&gl_window, &gl, &mut egui_glow),
-            glutin::event::Event::RedrawRequested(_) if !cfg!(windows) => app.draw(&gl_window, &gl, &mut egui_glow),
-            glutin::event::Event::WindowEvent { event, .. } =>  {
-                if app.update(event, &gl_window, &gl, &mut egui_glow) == ControlFlow::Exit {
-                    ControlFlow::Exit
-                } else {
-                    *control_flow
-                }
-            }
-            glutin::event::Event::LoopDestroyed => {
-                egui_glow.destroy(&gl);
-                *control_flow
-            },
-            winit::event::Event::UserEvent(RequestRepaintEvent) => {
-                gl_window.window().request_redraw();
-                *control_flow
-            },
-            _ => *control_flow,
+        match event {
+            glutin::event::Event::RedrawEventsCleared if cfg!(windows) => app.draw(&gl_window, &gl, &mut egui_glow, control_flow),
+            glutin::event::Event::RedrawRequested(_) if !cfg!(windows) => app.draw(&gl_window, &gl, &mut egui_glow, control_flow),
+            glutin::event::Event::WindowEvent { event, .. } => app.update(event, &gl_window, &gl, &mut egui_glow, control_flow),
+            glutin::event::Event::LoopDestroyed => egui_glow.destroy(&gl),
+            glutin::event::Event::UserEvent(RequestRepaintEvent) => gl_window.window().request_redraw(),
+            _ => ()
         }
     });
 }
 
 pub struct App {
     frame: epi::Frame,
-    state: AppState,
+    app: AppComponent,
 }
 
 impl App {
@@ -101,7 +91,7 @@ impl App {
         window: &winit::window::Window,
         repaint_signal: std::sync::Arc<dyn epi::backend::RepaintSignal>,
     ) -> Self {
-        App {
+        Self {
             frame: epi::Frame::new(epi::backend::FrameData {
                 info: epi::IntegrationInfo {
                     name: "custom_glow",
@@ -113,7 +103,7 @@ impl App {
                 output: Default::default(),
                 repaint_signal,
             }),
-            state: AppState::default(),
+            app: AppComponent::default(),
         }
     }
     
@@ -122,16 +112,25 @@ impl App {
         gl_window: &glutin::WindowedContext<glutin::PossiblyCurrent>,
         gl: &glow::Context,
         egui_glow: &mut egui_glow::EguiGlow,
-    ) -> ControlFlow {
-        
+        control_flow: &mut ControlFlow,
+    ) {
         let clear_color = [0.1, 0.1, 0.1];
         
-        let frame = &self.frame;
-        let ui_state = &mut self.state;
-        
+        // Evaluate frame
+        let frame_start = Instant::now();
         let needs_repaint = egui_glow.run(gl_window.window(), |egui_ctx| {
-            AppUi::ui(ui_state, egui_ctx, frame);
+            self.app.ui(egui_ctx, &self.frame);
         });
+        let frame_time = (Instant::now() - frame_start).as_secs_f64() as f32;
+        self.frame.lock().info.cpu_usage = Some(frame_time);
+        
+        *control_flow = if self.app.should_quit {
+            ControlFlow::Exit
+        } else if needs_repaint {
+            ControlFlow::Poll
+        } else {
+            ControlFlow::Wait
+        };
         
         // OpenGL drawing
         
@@ -141,22 +140,11 @@ impl App {
             gl.clear(glow::COLOR_BUFFER_BIT);
         }
         
-        // background openGL calls goes here
-        
         // gui drawing
         egui_glow.paint(gl_window.window(), &gl);
         
         // swap buffers
         gl_window.swap_buffers().unwrap();
-        
-        // return control flow
-        if ui_state.should_quit {
-            ControlFlow::Exit
-        } else if needs_repaint {
-            ControlFlow::Poll
-        } else {
-            ControlFlow::Wait
-        }
     }
     
     /// Reacts to window events and updates
@@ -165,9 +153,10 @@ impl App {
         gl_window: &glutin::WindowedContext<glutin::PossiblyCurrent>,
         gl: &glow::Context,
         egui_glow: &mut egui_glow::EguiGlow,
-    ) -> ControlFlow {
+        control_flow: &mut ControlFlow,
+    ) {
         if matches!(event, WindowEvent::CloseRequested | WindowEvent::Destroyed) {
-            return glutin::event_loop::ControlFlow::Exit;
+            *control_flow = glutin::event_loop::ControlFlow::Exit;
         }
         
         if let glutin::event::WindowEvent::Resized(physical_size) = event {
@@ -176,7 +165,5 @@ impl App {
         
         egui_glow.on_event(&event);
         gl_window.window().request_redraw(); // TODO: ask egui if the events warrants a repaint instead
-        
-        ControlFlow::Poll
     }
 }

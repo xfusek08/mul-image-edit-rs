@@ -71,8 +71,7 @@ impl EditedImage {
             None => self.preview_original(),
         }
     }
-    
-    
+        
     pub fn preview_original(&self) -> &DynamicImage {
         self.preview_original
             .as_ref()

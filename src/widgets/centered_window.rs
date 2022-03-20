@@ -30,11 +30,3 @@ impl CenteredWindow {
             });
     }
 }
-
-pub fn BigText(text: &str) -> impl Into<egui::WidgetText> {
-    SizedText(text, 30.0)
-}
-
-pub fn SizedText(text: &str, size: f32) -> impl Into<egui::WidgetText> {
-    egui::RichText::new(text).font(egui::FontId::proportional(size))
-}

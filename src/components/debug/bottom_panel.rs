@@ -1,18 +1,34 @@
-use crate::data::AppState;
 
-pub struct DebugBottomPanel;
+//! This file is inspired by:
+//!    https://github.com/emilk/egui/blob/master/egui_demo_lib/src/backend_panel.rs
 
-impl DebugBottomPanel {
-    pub fn ui(state: &mut AppState, ctx: &egui::Context, frame: &epi::Frame) {
+use super::FrameHistory;
+
+#[derive(Default)]
+pub struct BottomPanel {
+    pub pixels_per_point: Option<f32>, // TODO load this value from config file
+    pub frame_history: FrameHistory,
+}
+
+// ui code
+impl BottomPanel {
+    pub fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
+        self.frame_history.on_new_frame(
+            ctx.input().time,
+            frame.info().cpu_usage
+        );
+    }
+    
+    pub fn ui(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         egui::TopBottomPanel::bottom("bottom_panel")
             .resizable(false)
             .min_height(0.0)
             .show(ctx,|ui| {
                 let mut debug_on_hover = ui.ctx().debug_on_hover();
-                let pixels_per_point = state.pixels_per_point.get_or_insert_with(|| {
+                let pixels_per_point = self.pixels_per_point.get_or_insert_with(|| {
                     frame.info().native_pixels_per_point.unwrap_or_else(|| ui.ctx().pixels_per_point())
                 });
-        
+                
                 ui.horizontal(|ui| {
                     ui.checkbox(&mut debug_on_hover, "🐛 Debug on hover");
                     ui.separator();
@@ -37,6 +53,8 @@ impl DebugBottomPanel {
                             *pixels_per_point = native_pixels_per_point;
                         }
                     }
+                    
+                    self.frame_history.ui(ui);
                 });
                 
                 if !ui.ctx().is_using_pointer() {
@@ -46,3 +64,4 @@ impl DebugBottomPanel {
             });
     }
 }
+    
