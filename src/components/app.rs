@@ -1,30 +1,53 @@
 
+use std::sync::Arc;
+
+use epi::backend::RepaintSignal;
+
 use crate::utils::load_input_file;
-use crate::widgets::{CenteredWindow, FileDropper};
+use crate::widgets::{CenteredWindow, FileDropper, texts};
 use crate::data::MultimediaFile;
-use crate::widgets::texts;
 
 use super::ImageEditor;
 
 #[cfg(debug_assertions)]
 use super::debug;
 
-#[derive(Default)]
 pub struct App {
     
     // global apps settings
-    pub should_quit: bool,
-    pub error_message: Option<String>,
+    should_quit: bool,
+    error_message: Option<String>,
+    repaint_signal: Arc<dyn RepaintSignal>,
     
     // ui components
-    pub editor: Option<ImageEditor>,
+    editor: Option<ImageEditor>,
     
     #[cfg(debug_assertions)]
-    pub debug_bottom_panel: debug::BottomPanel,
+    debug_bottom_panel: debug::BottomPanel,
+}
+
+// constructors
+impl App {
+    pub fn new(repaint_signal: Arc<dyn RepaintSignal>) -> Self {
+        Self {
+            repaint_signal,
+            should_quit: Default::default(),
+            error_message: Default::default(),
+            editor: Default::default(),
+            
+            #[cfg(debug_assertions)]
+            debug_bottom_panel: Default::default(),
+        }
+    }
 }
 
 // Data manipulation
 impl App {
+    
+    /// Get the app's should quit.
+    pub fn should_quit(&self) -> bool {
+        self.should_quit
+    }
     
     /// sets state to quitted
     pub fn quit(&mut self) {
@@ -34,7 +57,7 @@ impl App {
     /// tries to loaf image from file name
     pub fn load_image_from_file_name(&mut self, s : &str) {
         (self.editor, self.error_message) = match MultimediaFile::from_file(s) {
-            Ok(image_file) => match ImageEditor::from_file(image_file) {
+            Ok(image_file) => match ImageEditor::from_file(image_file, self.repaint_signal.clone()) {
                 Ok(state) => (Some(state), None),
                 Err(message) => ( None, Some(message)),
             },
@@ -70,7 +93,7 @@ impl App {
             
         } else if let Some(editor) = &mut self.editor {
             
-            editor.ui(ctx);
+            editor.ui(ctx, frame);
             
         } else {
             
@@ -81,7 +104,7 @@ impl App {
             });
         }
     }
-    
+     
     fn open_file_dialog(&mut self, ui : &mut egui::Ui) {
         if ui.button("Open file").clicked() {
             if let Some(file_name) = load_input_file() {

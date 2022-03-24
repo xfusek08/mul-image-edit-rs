@@ -10,19 +10,16 @@
 //!
 
 use std::time::Instant;
-use glutin::{ event::WindowEvent, event_loop::ControlFlow };
+use std::sync::{Arc, Mutex};
+
+use glutin::{
+    event::WindowEvent,
+    event_loop::ControlFlow
+};
+use epi::backend::RepaintSignal;
 use egui_winit::winit;
 
 use crate::components::App as AppComponent;
-
-struct RequestRepaintEvent;
-struct GlowRepaintSignal(std::sync::Mutex<winit::event_loop::EventLoopProxy<RequestRepaintEvent>>);
-
-impl epi::backend::RepaintSignal for GlowRepaintSignal {
-    fn request_repaint(&self) {
-        self.0.lock().unwrap().send_event(RequestRepaintEvent).ok();
-    }
-}
 
 /// Creates an opengl window and gl context
 fn create_gl_display(
@@ -62,7 +59,7 @@ pub fn run(name : &str, native_options: &epi::NativeOptions) -> ! {
     let window_builder = egui_winit::epi::window_builder(native_options, &window_settings).with_title(name);
     let event_loop = winit::event_loop::EventLoop::with_user_event();
     let (gl_window, gl) = create_gl_display(window_builder, &event_loop);
-    let repaint_signal = std::sync::Arc::new(GlowRepaintSignal(std::sync::Mutex::new(event_loop.create_proxy())));
+    let repaint_signal = Arc::new(GlowRepaintSignal(Mutex::new(event_loop.create_proxy())));
     let mut app = App::new(gl_window.window(), repaint_signal);
     let mut egui_glow = egui_glow::EguiGlow::new(gl_window.window(), &gl);
     
@@ -89,7 +86,7 @@ impl App {
     /// Builds an app which is gl context and main window
     pub fn new(
         window: &winit::window::Window,
-        repaint_signal: std::sync::Arc<dyn epi::backend::RepaintSignal>,
+        repaint_signal: Arc<dyn RepaintSignal>,
     ) -> Self {
         Self {
             frame: epi::Frame::new(epi::backend::FrameData {
@@ -101,9 +98,9 @@ impl App {
                     native_pixels_per_point: Some(window.scale_factor() as f32),
                 },
                 output: Default::default(),
-                repaint_signal,
+                repaint_signal: repaint_signal.clone(),
             }),
-            app: AppComponent::default(),
+            app: AppComponent::new(repaint_signal),
         }
     }
     
@@ -124,7 +121,7 @@ impl App {
         let frame_time = (Instant::now() - frame_start).as_secs_f64() as f32;
         self.frame.lock().info.cpu_usage = Some(frame_time);
         
-        *control_flow = if self.app.should_quit {
+        *control_flow = if self.app.should_quit() {
             ControlFlow::Exit
         } else if needs_repaint {
             ControlFlow::Poll
@@ -165,5 +162,14 @@ impl App {
         
         egui_glow.on_event(&event);
         gl_window.window().request_redraw(); // TODO: ask egui if the events warrants a repaint instead
+    }
+}
+
+pub struct RequestRepaintEvent;
+pub struct GlowRepaintSignal(std::sync::Mutex<winit::event_loop::EventLoopProxy<RequestRepaintEvent>>);
+
+impl RepaintSignal for GlowRepaintSignal {
+    fn request_repaint(&self) {
+        self.0.lock().unwrap().send_event(RequestRepaintEvent).ok();
     }
 }
