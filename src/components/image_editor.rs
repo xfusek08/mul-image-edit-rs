@@ -3,7 +3,6 @@ use std::sync::Arc;
 use std::time::{Instant, Duration};
 
 use egui::Vec2;
-use egui::emath::Numeric;
 use egui::style::Margin;
 use epi::backend::RepaintSignal;
 use indoc::indoc;
@@ -20,6 +19,7 @@ pub struct ImageEditor {
     repaint_signal: Arc<dyn RepaintSignal>,
     texture: Option<egui::TextureHandle>,
     viewport: Viewport,
+    right_panel_width: f32,
 }
 
 // constructors
@@ -39,6 +39,7 @@ impl ImageEditor {
                     repaint_signal,
                     texture: None,
                     viewport,
+                    right_panel_width: 160.0,
                 })
             },
             
@@ -161,29 +162,34 @@ impl ImageEditor {
                 });
         });
         
-        // right editor panel
-        egui::SidePanel::right("editor_panel")
-            // .min_width(250.0)
-            .resizable(false)
-            .show(ctx,  |ui| {
-                ui.add_space(10.0);
-                
-                let mut e = self.image.settings().exposure;
-                EditorSlider(ui, "Exposure", &mut e, -1.0..=1.0);
-                if e != self.image.settings().exposure {
-                    self.image.update_settings(ImageSettings {exposure: e, ..*self.image.settings() });
-                    self.texture = None;
-                }
-                
-                ui.add_space(10.0);
-            });
+        // Right editor panel
+        let mut right_panel = egui::SidePanel::right("editor_panel");
+        let right_panel_resize_id = egui::Id::new("editor_panel").with("__resize");
+        let right_panel_resizing = ctx.memory().is_being_dragged(right_panel_resize_id);
+        if !right_panel_resizing {
+            right_panel = right_panel.min_width(self.right_panel_width);
+        }
+        right_panel.show(ctx,  |ui| {
+            if right_panel_resizing {
+                self.right_panel_width = ui.available_width().max(100.0);
+            }
+            
+            ui.add_space(10.0);
+            
+            let mut e = self.image.settings().exposure;
+            EditorSlider::ui(ui, "Exposure", &mut e, -1.0..=1.0);
+            if e != self.image.settings().exposure {
+                self.image.update_settings(ImageSettings {exposure: e, ..*self.image.settings() });
+                self.texture = None;
+            }
+            
+            ui.add_space(10.0);
+        });
         
         // image viewport
         egui::CentralPanel::default()
             .show(ctx, |ui| {
                 self.size_viewport(ui.available_size() * 0.98);
-                
-                ctx.request_repaint();
                 
                 let offset = 0.5 * (ui.available_size() - self.preview_size);
                 

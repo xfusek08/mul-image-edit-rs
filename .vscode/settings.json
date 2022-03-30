@@ -22,5 +22,6 @@
         "unmultiplied",
         "vsync",
         "winit"
-    ]
+    ],
+    "git.autoRepositoryDetection": false
 }
