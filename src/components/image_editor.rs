@@ -69,7 +69,6 @@ impl ImageEditor {
             );
             
             let diff = self.image.preview_working().size_vec2() - self.preview_size;
-            dbg!(diff.length());
             if diff.length() > 20.0 {
                 self.last_view_change_time = Some(Instant::now());
                 self.repaint_signal.request_repaint();
@@ -172,7 +171,6 @@ impl ImageEditor {
                 let mut e = self.image.settings().exposure;
                 EditorSlider(ui, "Exposure", &mut e, -1.0..=1.0);
                 if e != self.image.settings().exposure {
-                    dbg!("repainting with exposure: ", e);
                     self.image.update_settings(ImageSettings {exposure: e, ..*self.image.settings() });
                     self.texture = None;
                 }

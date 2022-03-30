@@ -16,25 +16,6 @@ pub struct ImageSettings {
     pub blur: f32,
 }
 
-impl ImageSettings {
-    
-    /// Get the image settings's contrast.
-    pub fn contrast(&self) -> f32 {
-        self.contrast
-    }
-
-    /// Get the image settings's exposure.
-    pub fn exposure(&self) -> f32 {
-        self.exposure
-    }
-
-    /// Get the image settings's blur.
-    pub fn blur(&self) -> f32 {
-        self.blur
-    }
-    
-}
-
 pub struct EditedImage {
     original: Arc<DynamicImage>, // this is resource shared between this struct and computational thread
     
@@ -71,7 +52,12 @@ impl EditedImage {
     where
         F: FnOnce() + Send + 'static
     {
-        self.resize_job.start(self.original.clone(), target_size.clone(), on_finished)
+        self.resize_job.start(
+            self.original.clone(),
+            target_size.clone(),
+            self.settings.clone(),
+            on_finished
+        )
     }
     
     pub fn update_check(&mut self) -> bool {
@@ -87,10 +73,8 @@ impl EditedImage {
     
     pub fn update_settings(&mut self, new_settings: ImageSettings) {
         self.settings = new_settings;
-        dbg!("New settings: {}", &self.settings);
-        
         if let Some(p_orig) = &self.preview_original {
-            self.preview_working = Some(p_orig.brighten((self.settings.exposure * 255.0) as i32));
+            self.preview_working = Some(p_orig.apply_settings(self.settings()));
         }
     }
 }
@@ -131,6 +115,7 @@ impl EditedImage {
 pub trait EditedImageComponent {
     fn size_vec2(&self) -> Vec2;
     fn raw_size(&self) -> u64;
+    fn apply_settings(&self, settings: &ImageSettings) -> DynamicImage;
 }
 
 impl EditedImageComponent for DynamicImage {
@@ -140,6 +125,10 @@ impl EditedImageComponent for DynamicImage {
     
     fn raw_size(&self) -> u64 {
         self.as_bytes().len() as _
+    }
+    
+    fn apply_settings(&self, settings: &ImageSettings) -> DynamicImage {
+        self.brighten((settings.exposure * 120.0) as i32)
     }
 }
 
@@ -212,7 +201,7 @@ impl ResizeJob {
     }
     
     
-    pub fn start<F>(&mut self, original: Arc<DynamicImage>, target_size: Vec2, on_finished: F) -> bool
+    pub fn start<F>(&mut self, original: Arc<DynamicImage>, target_size: Vec2, settings: ImageSettings, on_finished: F) -> bool
     where
         F: FnOnce() + Send + 'static
     {
@@ -224,8 +213,6 @@ impl ResizeJob {
             self.join_handle();
         }
         
-        dbg!(format!("Starting job -> {} x {}", target_size.x, target_size.y));
-        
         let data = self.data.clone();
         
         self.join_handle = Some(std::thread::spawn(move || {
@@ -234,7 +221,7 @@ impl ResizeJob {
                 target_size.y as u32,
                 FilterType::CatmullRom
             );
-            let preview_working = preview_original.clone();
+            let preview_working = preview_original.apply_settings(&settings);
             
             with_data(data, |data| {
                 data.result = Some((preview_original, preview_working));
@@ -242,7 +229,6 @@ impl ResizeJob {
             }).unwrap(); // NOTE: can panic!
             
             on_finished();
-            dbg!("Job finished");
         }));
         
         self.with_data(|data| {

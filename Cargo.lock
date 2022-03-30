@@ -206,23 +206,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73b5e5f48b927f04e952dedc932f31995a65a0bf65ec971c74436e51bf6e970d"
 
 [[package]]
-name = "audiosep-rs"
-version = "0.1.0"
-dependencies = [
- "egui",
- "egui-winit",
- "egui_extras",
- "egui_glow",
- "epi",
- "file-format",
- "glow",
- "glutin",
- "image",
- "indoc",
- "rfd",
-]
-
-[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1371,6 +1354,23 @@ dependencies = [
  "png",
  "scoped_threadpool",
  "tiff",
+]
+
+[[package]]
+name = "image-editor-rs"
+version = "0.1.0"
+dependencies = [
+ "egui",
+ "egui-winit",
+ "egui_extras",
+ "egui_glow",
+ "epi",
+ "file-format",
+ "glow",
+ "glutin",
+ "image",
+ "indoc",
+ "rfd",
 ]
 
 [[package]]
