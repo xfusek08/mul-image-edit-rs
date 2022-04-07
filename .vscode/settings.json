@@ -8,6 +8,7 @@
         }
     },
     "cSpell.words": [
+        "colorops",
         "eframe",
         "egui",
         "epaint",
@@ -16,9 +17,12 @@
         "glutin",
         "imageops",
         "indoc",
+        "milis",
         "noninteractive",
         "opengl",
         "SRGB",
+        "subfolders",
+        "Tickable",
         "unmultiplied",
         "vsync",
         "winit"

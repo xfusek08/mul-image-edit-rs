@@ -9,7 +9,7 @@ use crate::utils::with_data;
 
 /// Sliders to adjust image properties
 /// values are always offsets from original ( -x <-- 0 --> +x )
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq)]
 pub struct ImageSettings {
     pub contrast: f32,
     pub exposure: f32,
@@ -128,7 +128,9 @@ impl EditedImageComponent for DynamicImage {
     }
     
     fn apply_settings(&self, settings: &ImageSettings) -> DynamicImage {
-        self.brighten((settings.exposure * 120.0) as i32)
+        self
+            .brighten((settings.exposure * 2.0) as i32) // -100% <-> 100% : -200 px <->  200 px
+            .adjust_contrast(settings.contrast)
     }
 }
 
@@ -219,7 +221,7 @@ impl ResizeJob {
             let preview_original = original.resize(
                 target_size.x as u32,
                 target_size.y as u32,
-                FilterType::CatmullRom
+                FilterType::Nearest
             );
             let preview_working = preview_original.apply_settings(&settings);
             

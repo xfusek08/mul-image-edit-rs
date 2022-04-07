@@ -5,7 +5,7 @@ use epi::backend::RepaintSignal;
 
 use crate::utils::load_input_file;
 use crate::widgets::{CenteredWindow, FileDropper, texts};
-use crate::data::MultimediaFile;
+use crate::data::{MultimediaFile, Tick};
 
 use super::ImageEditor;
 
@@ -65,6 +65,12 @@ impl App {
         }
     }
     
+    pub fn tick(&mut self, tick: &Tick) {
+        if let Some(c) = &mut self.editor {
+            c.tick(tick);
+        }
+        self.debug_bottom_panel.tick(tick);
+    }
 }
 
 // ui code

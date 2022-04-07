@@ -2,16 +2,29 @@
 //! This file is inspired by:
 //!    https://github.com/emilk/egui/blob/master/egui_demo_lib/src/backend_panel.rs
 
+use crate::data::Tick;
+
 use super::FrameHistory;
 
 #[derive(Default)]
 pub struct BottomPanel {
     pub pixels_per_point: Option<f32>, // TODO load this value from config file
     pub frame_history: FrameHistory,
+    pub ticks: u64,
+    pub average_delta_between_tics_sec: f32
 }
 
 // ui code
 impl BottomPanel {
+    
+    pub fn tick(&mut self, tick: &Tick) {
+        self.ticks = self.ticks + 1;
+        let delta = tick.delta.as_secs_f32();
+        
+        // see: https://math.stackexchange.com/a/106720
+        self.average_delta_between_tics_sec = self.average_delta_between_tics_sec + (delta - self.average_delta_between_tics_sec) / (self.ticks as f32);
+    }
+    
     pub fn update(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
         self.frame_history.on_new_frame(
             ctx.input().time,
@@ -55,6 +68,8 @@ impl BottomPanel {
                     }
                     
                     self.frame_history.ui(ui);
+                    ui.separator();
+                    ui.label(format!("Ticks: {} | {} ms average duration", self.ticks, self.average_delta_between_tics_sec));
                 });
                 
                 if !ui.ctx().is_using_pointer() {
