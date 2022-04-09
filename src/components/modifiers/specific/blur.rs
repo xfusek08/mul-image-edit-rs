@@ -1,45 +1,43 @@
 
-use image::imageops::colorops;
+use crate::utils::math::lramp;
 
-use super::{SliderData, SliderCommonDataImp, SliderCommonUiImpl, Modifier, Slider};
+use crate::components::modifiers::{SliderCommonDataImp, SliderCommonUiImpl, Modifier, Slider, SliderData};
 
+const MAX_BLUR: f32 = 3.0;
 
-pub struct ExposureModifier {
+pub struct BlurModifier {
     data : SliderData
 }
 
-impl Default for ExposureModifier {
+impl Default for BlurModifier {
     fn default() -> Self {
         Self {
             data: SliderData {
+                min: 0.0,
+                max: 100.0,
                 ..Default::default()
             }
         }
     }
 }
 
-impl SliderCommonDataImp for ExposureModifier {
+impl SliderCommonDataImp for BlurModifier {
     fn slider_data(&self) -> &SliderData { &self.data }
     fn slider_data_mut(&mut self) -> &mut SliderData { &mut self.data }
 }
 
-impl SliderCommonUiImpl for ExposureModifier {}
+impl SliderCommonUiImpl for BlurModifier {}
 
-impl Modifier for ExposureModifier {
+impl Modifier for BlurModifier {
     fn title(&self) -> &str {
-        "Exposure"
+        "Blur"
     }
 
     fn apply(&self, mut image: crate::components::Image) -> crate::components::Image {
         if self.percent() == 0.0 {
             return image;
         }
-        
-        colorops::brighten_in_place(
-            &mut image.raw_image,
-            (self.percent().clamp(-100.0, 100.0) * 2.55) as i32
-        );
-        
+        image.raw_image =  image.raw_image.blur(lramp(0.0, MAX_BLUR, self.percent() * 0.01));
         image
     }
 }

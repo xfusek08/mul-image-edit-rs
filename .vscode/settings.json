@@ -15,6 +15,7 @@
         "Ernerfeldt",
         "FRAMEBUFFER",
         "glutin",
+        "huerotate",
         "imageops",
         "indoc",
         "lramp",

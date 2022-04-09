@@ -1,9 +1,9 @@
 
 use image::{GenericImageView, GenericImage};
 
-use crate::utils::math::lramp;
+use crate::{utils::math::lramp};
 
-use super::{SliderData, SliderCommonDataImp, SliderCommonUiImpl, Modifier, Slider};
+use crate::components::modifiers::{SliderCommonDataImp, SliderCommonUiImpl, Modifier, Slider, SliderData};
 
 pub struct SepiaModifier {
     data : SliderData

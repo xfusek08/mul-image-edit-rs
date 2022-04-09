@@ -76,7 +76,6 @@ pub fn run(name : &str, native_options: &epi::NativeOptions) -> ! {
                 // when nothings is happening then slow down refreshing to once in every 100 ms
                 scheduled_tick = scheduled_tick.tick();
                 if scheduled_tick.is_scheduled() {
-                    dbg!("tick");
                     app.tick(&scheduled_tick);
                 }
                 scheduled_tick = scheduled_tick.schedule_milis(100);

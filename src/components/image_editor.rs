@@ -10,13 +10,16 @@ use indoc::indoc;
 use crate::{
     utils::{fit_into, format_size},
     data::{MultimediaFile, Viewport},
-    constants::{RIGHT_PANEL_WIDTH, THUMBNAIL_SIZE, MIN_SLIDER_WIDTH}
+    constants::{RIGHT_PANEL_WIDTH, THUMBNAIL_SIZE}
 };
 
 use super::{
+    modifiers::{
+        Slider,
+        specific::{ExposureModifier, ContrastModifier, BlurModifier, SepiaModifier, TintModifier}
+    },
     ModifierPipeline,
-    Image,
-    modifiers::{ExposureModifier, Slider, ContrastModifier, SepiaModifier, BlurModifier}
+    Image
 };
 
 pub struct ImageEditor {
@@ -27,7 +30,6 @@ pub struct ImageEditor {
     repaint_signal: Arc<dyn RepaintSignal>,
     texture: Option<egui::TextureHandle>,
     viewport: Viewport,
-    right_panel_width: f32,
 }
 
 // constructors
@@ -45,6 +47,7 @@ impl ImageEditor {
                 pipeline.push_modifier(Box::new(ContrastModifier::with_thumbnails(&tm)));
                 pipeline.push_modifier(Box::new(BlurModifier::with_thumbnails(&tm)));
                 pipeline.push_modifier(Box::new(SepiaModifier::with_thumbnails(&tm)));
+                pipeline.push_modifier(Box::new(TintModifier::with_thumbnails(&tm)));
                 
                 Ok(Self {
                     last_view_change_time: None,
@@ -53,7 +56,6 @@ impl ImageEditor {
                     repaint_signal,
                     texture: None,
                     viewport,
-                    right_panel_width: RIGHT_PANEL_WIDTH,
                     pipeline,
                 })
             },
@@ -182,25 +184,6 @@ impl ImageEditor {
                     // }
                 });
         });
-        
-        
-        // // Right editor panel
-        let min_w = ctx.available_rect().width() * 0.15;
-        let max_w = ctx.available_rect().width() * 0.7;
-        // let mut right_panel = egui::SidePanel::right("editor_panel");
-        // let right_panel_resize_id = egui::Id::new("editor_panel").with("__resize");
-        // let right_panel_resizing = ctx.memory().is_being_dragged(right_panel_resize_id);
-        // if !right_panel_resizing {
-        //     right_panel = right_panel.min_width(self.right_panel_width);
-        // } else {
-        //     right_panel = right_panel.min_width(min_w).max_width(max_w);
-        // }
-        // right_panel.show(ctx,  |ui| {
-        //     if right_panel_resizing {
-        //         self.right_panel_width = ui.available_width().clamp(min_w, max_w);
-        //     }
-        //     self.pipeline.ui(ui);
-        // });
         
         // // right editor panel
         egui::SidePanel::right("editor_panel")
