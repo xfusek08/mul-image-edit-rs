@@ -100,7 +100,7 @@ impl ModifierPipeline {
         
         // if based image exists and does not need change -> return copy of it
         // otherwise create size copy of original
-        let mut image = match &self.base_image {
+        let image = match &self.base_image {
             Some(i) if i.size_vec2() == self.preview_size => i.clone(),
             _ => {
                 // create new sized image
@@ -115,12 +115,9 @@ impl ModifierPipeline {
         
         // if there are any modifiers
         if self.modifiers.len() > 0 {
-            self.modifiers
-                .iter_mut()
-                .for_each(|m| {
-                    image = m.apply(image);
-                });
-            self.current_image = Some(image);
+            self.current_image = Some(self.modifiers
+                .iter().fold(image, |acc, m| m.apply(acc))
+            );
         }
     }
 }
@@ -143,7 +140,6 @@ impl ModifierPipeline {
         self.modifiers
             .iter_mut()
             .enumerate()
-            .rev()
             .for_each(|(i, m)| {
                 
                 let response = match self.active_index {
@@ -160,7 +156,8 @@ impl ModifierPipeline {
         // react to action of particular modifier
         match modifier_action {
             ModifierResponse::Selected => self.select_modifier(on_index),
-            ModifierResponse::Changed => self.apply_current_modifier(),
+            ModifierResponse::Changed if on_index == self.active_index.unwrap_or(self.modifiers.len()) => self.apply_current_modifier(),
+            ModifierResponse::Changed => self.reevaluate(),
             _ => ()
         }
     }

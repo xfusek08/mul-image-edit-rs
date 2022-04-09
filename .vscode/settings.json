@@ -17,6 +17,7 @@
         "glutin",
         "imageops",
         "indoc",
+        "lramp",
         "milis",
         "noninteractive",
         "opengl",

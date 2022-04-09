@@ -1,44 +1,43 @@
 
-use image::imageops::colorops;
+use crate::utils::math::lramp;
 
-use super::{SliderData, Modifier, SliderCommonUiImpl, SliderCommonDataImp, Slider};
+use super::{Slider, SliderData, Modifier, SliderCommonUiImpl, SliderCommonDataImp};
 
-pub struct ContrastModifier {
+const MAX_BLUR: f32 = 3.0;
+
+pub struct BlurModifier {
     data : SliderData
 }
 
-impl Default for ContrastModifier {
+impl Default for BlurModifier {
     fn default() -> Self {
         Self {
             data: SliderData {
+                min: 0.0,
+                max: 100.0,
                 ..Default::default()
             }
         }
     }
 }
 
-impl SliderCommonDataImp for ContrastModifier {
+impl SliderCommonDataImp for BlurModifier {
     fn slider_data(&self) -> &SliderData { &self.data }
     fn slider_data_mut(&mut self) -> &mut SliderData { &mut self.data }
 }
 
-impl SliderCommonUiImpl for ContrastModifier {}
+impl SliderCommonUiImpl for BlurModifier {}
 
-impl Modifier for ContrastModifier {
+impl Modifier for BlurModifier {
     fn title(&self) -> &str {
-        "Contrast"
+        "Blur"
     }
 
     fn apply(&self, mut image: crate::components::Image) -> crate::components::Image {
         if self.percent() == 0.0 {
             return image;
         }
-          
-        colorops::contrast_in_place(
-            &mut image.raw_image,
-            self.percent(),
-        );
-        
+        image.raw_image =  image.raw_image.blur(lramp(0.0, MAX_BLUR, self.percent() * 0.01));
         image
     }
 }

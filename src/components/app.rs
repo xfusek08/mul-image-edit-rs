@@ -66,9 +66,11 @@ impl App {
     }
     
     pub fn tick(&mut self, tick: &Tick) {
-        if let Some(c) = &mut self.editor {
-            c.tick(tick);
-        }
+        // if let Some(c) = &mut self.editor {
+        //     c.tick(tick);
+        // }
+        
+        #[cfg(debug_assertions)]
         self.debug_bottom_panel.tick(tick);
     }
 }

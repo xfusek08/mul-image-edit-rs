@@ -19,18 +19,14 @@ pub trait Modifier : ModifierUi {
     fn apply(&self, image: Image) -> Image;
     
     fn show_preview(&mut self, ui: &mut egui::Ui) -> ModifierResponse {
-        // TODO: render inner ui behind clickable overlay
-        ui.group(|ui| self.ui(ui));
-        ModifierResponse::Nothing
+        ui.group(|ui| self.ui(ui)).inner
     }
     
     fn show_applied(&mut self, ui: &mut egui::Ui) -> ModifierResponse {
-        ui.group(|ui| ui.label(self.title()));
-        ModifierResponse::Nothing
+        ui.group(|ui| self.ui(ui)).inner
     }
     
     fn show_active(&mut self, ui: &mut egui::Ui) -> ModifierResponse {
-        let r = ui.group(|ui| self.ui(ui));
-        r.inner
+        ui.group(|ui| self.ui(ui)).inner
     }
 }

@@ -9,7 +9,7 @@
 //! Customization was done to allow reacting to native os events and access and use raw opengl context for painting alongside the gui.
 //!
 
-use std::time::{Instant, Duration};
+use std::time::Instant;
 use std::sync::{Arc, Mutex};
 
 use glutin::{
@@ -76,6 +76,7 @@ pub fn run(name : &str, native_options: &epi::NativeOptions) -> ! {
                 // when nothings is happening then slow down refreshing to once in every 100 ms
                 scheduled_tick = scheduled_tick.tick();
                 if scheduled_tick.is_scheduled() {
+                    dbg!("tick");
                     app.tick(&scheduled_tick);
                 }
                 scheduled_tick = scheduled_tick.schedule_milis(100);
@@ -130,8 +131,6 @@ impl App {
         });
         let frame_time = (Instant::now() - frame_start).as_secs_f64() as f32;
         self.frame.lock().info.cpu_usage = Some(frame_time);
-
-        dbg!("drawed");
         
         *control_flow = if self.app.should_quit() {
             ControlFlow::Exit
@@ -164,8 +163,6 @@ impl App {
         egui_glow: &mut egui_glow::EguiGlow,
         control_flow: &mut ControlFlow,
     ) {
-        
-        dbg!("update");
         
         if matches!(event, WindowEvent::CloseRequested | WindowEvent::Destroyed) {
             *control_flow = glutin::event_loop::ControlFlow::Exit;
