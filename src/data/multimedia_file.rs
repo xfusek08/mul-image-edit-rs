@@ -46,6 +46,15 @@ impl MultimediaFile {
         self.file_name.as_str()
     }
     
+    pub fn get_dir(&self) -> Option<PathBuf> {
+        let mut buf = self.path.clone();
+        if buf.pop() {
+            Some(buf)
+        } else {
+            None
+        }
+    }
+    
     pub fn file_name_owned(&self) -> String {
         self.file_name.clone()
     }

@@ -8,6 +8,7 @@
         }
     },
     "cSpell.words": [
+        "cgmath",
         "colorops",
         "eframe",
         "egui",
@@ -29,5 +30,7 @@
         "vsync",
         "winit"
     ],
-    "git.autoRepositoryDetection": false
+    "git.autoRepositoryDetection": false,
+    "vscode-pets.petType": "crab",
+    "vscode-pets.theme": "none",
 }

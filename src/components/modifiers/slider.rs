@@ -1,5 +1,5 @@
 
-use crate::{components::Image, constants::THUMBNAIL_SIZE};
+use crate::{components::Image, constants::{THUMBNAIL_SIZE, RIGHT_PANEL_WIDTH}};
 use super::{Modifier, ModifierResponse, ModifierUi};
 
 pub trait Slider : Modifier + Default {
@@ -9,6 +9,8 @@ pub trait Slider : Modifier + Default {
     fn percent_mut(&mut self) -> &mut f32;
     fn min_percent(&self) -> f32;
     fn max_percent(&self) -> f32;
+    fn units_name(&self) -> &str;
+    
     fn min_thumbnail(&mut self) -> &mut Option<crate::components::Image>;
     fn max_thumbnail(&mut self) -> &mut Option<crate::components::Image>;
     
@@ -49,7 +51,6 @@ impl<T: SliderCommonUiImpl> ModifierUi for T {
         let mut res = ModifierResponse::Nothing;
         
         ui.horizontal(|ui| {
-            
             macro_rules! draw_image_option { ($e:expr) => {
                 if let Some(image) = $e {
                     image.show_sized(ui, [THUMBNAIL_SIZE, THUMBNAIL_SIZE].into());
@@ -65,8 +66,9 @@ impl<T: SliderCommonUiImpl> ModifierUi for T {
                 
                 ui.label(format!("{}:", self.title()));
                 ui.horizontal(|ui| {
-                    ui.spacing_mut().slider_width = ui.available_width() - THUMBNAIL_SIZE * 2.0 - 20.0;
+                    ui.spacing_mut().slider_width = ui.available_width() - THUMBNAIL_SIZE * 2.0 - 25.0;
                     ui.add(egui::Slider::new(&mut percent, min..=max).clamp_to_range(true));
+                    ui.label(self.units_name());
                 });
                 
                 if percent != self.percent() {
@@ -84,6 +86,7 @@ impl<T: SliderCommonUiImpl> ModifierUi for T {
 // Trait with common implementation for slider data
 pub(crate) struct SliderData {
     pub percent: f32,
+    pub units_name: &'static str,
     pub min: f32,
     pub max: f32,
     pub min_thumbnail: Option<Image>,
@@ -93,6 +96,7 @@ impl Default for SliderData {
     fn default() -> Self {
         Self {
             percent: 0.0,
+            units_name: "%",
             min: -100.0,
             max: 100.0,
             min_thumbnail: None,
@@ -107,8 +111,11 @@ pub(crate) trait SliderCommonDataImp {
 impl<T: SliderCommonDataImp + Modifier + Default> Slider for T {
     fn percent(&self) -> f32 { self.slider_data().percent }
     fn percent_mut(&mut self) -> &mut f32 { &mut self.slider_data_mut().percent }
+    
+    fn units_name(&self) -> &str { self.slider_data().units_name }
     fn min_percent(&self) -> f32 { self.slider_data().min }
     fn max_percent(&self) -> f32 { self.slider_data().max }
+    
     fn min_thumbnail(&mut self) -> &mut Option<Image> { &mut self.slider_data_mut().min_thumbnail }
     fn max_thumbnail(&mut self) -> &mut Option<Image> { &mut self.slider_data_mut().max_thumbnail }
 }

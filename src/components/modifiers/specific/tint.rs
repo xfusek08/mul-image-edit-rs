@@ -11,6 +11,7 @@ impl Default for TintModifier {
     fn default() -> Self {
         Self {
             data: SliderData {
+                units_name: "°",
                 min: 0.0,
                 max: 360.0,
                 ..Default::default()
@@ -28,7 +29,7 @@ impl SliderCommonUiImpl for TintModifier {}
 
 impl Modifier for TintModifier {
     fn title(&self) -> &str {
-        "Tint"
+        "Hue Rotation"
     }
 
     fn apply(&self, mut image: crate::components::Image) -> crate::components::Image {

@@ -2,11 +2,13 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use egui::Vec2;
+use egui::{Vec2, Layout, vec2};
 use egui::style::Margin;
 use epi::backend::RepaintSignal;
 use indoc::indoc;
 
+use crate::utils::save_output_file;
+use crate::widgets::{texts, BigButton};
 use crate::{
     utils::{fit_into, format_size},
     data::{MultimediaFile, Viewport},
@@ -16,11 +18,16 @@ use crate::{
 use super::{
     modifiers::{
         Slider,
-        specific::{ExposureModifier, ContrastModifier, BlurModifier, SepiaModifier, TintModifier}
+        specific::{ExposureModifier, ContrastModifier, BlurModifier, SepiaModifier, TintModifier, CustomModifier}
     },
     ModifierPipeline,
     Image
 };
+
+pub enum EditorResult {
+    Nothing,
+    LoadNewImage,
+}
 
 pub struct ImageEditor {
     pipeline: ModifierPipeline,
@@ -48,6 +55,7 @@ impl ImageEditor {
                 pipeline.push_modifier(Box::new(BlurModifier::with_thumbnails(&tm)));
                 pipeline.push_modifier(Box::new(SepiaModifier::with_thumbnails(&tm)));
                 pipeline.push_modifier(Box::new(TintModifier::with_thumbnails(&tm)));
+                pipeline.push_modifier(Box::new(CustomModifier::with_thumbnails(&tm)));
                 
                 Ok(Self {
                     last_view_change_time: None,
@@ -85,65 +93,28 @@ impl ImageEditor {
                 false
             ));
         }
-        
-        // // if size has changed and no resize work is in progress
-        // if self.viewport.size != size {
-        //     self.viewport.size = size;
-        //     self.preview_size = fit_into(
-        //         &self.viewport.size,
-        //         &self.image.original().size_vec2(),
-        //         false
-        //     );
-            
-        //     let diff = self.image.preview_working().size_vec2() - self.preview_size;
-        //     if diff.length() > 20.0 {
-        //         self.last_view_change_time = Some(Instant::now());
-        //         self.repaint_signal.request_repaint();
-        //     }
-            
-        //     return;
-        // }
-        
-        // // if timer is running and it is time to start a resize work -> start resize work
-        // if let Some(time) = self.last_view_change_time {
-        //     if time.elapsed() >= Duration::from_millis(100) {
-                
-        //         let repaint_signal = self.repaint_signal.clone();
-        //         let started = self.image.resize(
-        //             &self.preview_size,
-        //             move || repaint_signal.request_repaint()
-        //         );
-                
-        //         // if job has not started then do not stop trying to start it
-        //         if started {
-        //             self.last_view_change_time = None;
-        //             self.repaint_signal.request_repaint();
-        //         }
-        //     }
-        //     return;
-        // }
-        
-        // // if preview image was updated then invalidate texture to be loaded in next pass
-        // if self.image.update_check() {
-        //     self.texture = None;
-        // }
+    }
+    
+    fn save_image_to_file(&self) {
+        if let Some(p) = save_output_file(Some(&self.media_file)) {
+            self.pipeline.apply_to_original().raw_image.save(p);
+        }
     }
 }
 
 // ui code
 impl ImageEditor {
-    pub fn ui(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
+    pub fn ui(&mut self, ctx: &egui::Context, frame: &epi::Frame) -> EditorResult {
         
-        // let is_resizing = self.image.is_resizing();
-        
+        let mut result = EditorResult::Nothing;
         
         // bottom panel with image data
         egui::TopBottomPanel::bottom("info_bar")
             .show(ctx, |ui| {
-                let original    = self.pipeline.original_image();
-                let current     = self.pipeline.current_image();
+                let original = self.pipeline.original_image();
+                let current = self.pipeline.current_image();
                 let original_size = original.size_vec2();
-                let current_size  = current.size_vec2();
+                let current_size = current.size_vec2();
                 
                 // let sw = 20.0;
                 // let w = ui.available_width() - sw;
@@ -185,13 +156,31 @@ impl ImageEditor {
                 });
         });
         
-        // // right editor panel
+        // right editor panel
         egui::SidePanel::right("editor_panel")
             .min_width(RIGHT_PANEL_WIDTH)
-            .max_width(RIGHT_PANEL_WIDTH)
+            // .max_width(RIGHT_PANEL_WIDTH)
             .default_width(RIGHT_PANEL_WIDTH)
-            .resizable(false)
-            .show(ctx,  |ui| self.pipeline.ui(ui));
+            // .resizable(false)
+            .show(ctx,  |ui| {
+                if BigButton::ui(ui, "📂  Open file").clicked() {
+                    result = EditorResult::LoadNewImage;
+                }
+                
+                ui.label(texts::sized("Filters: ", 20.0));
+                
+                let h = ui.available_height() - 55.0;
+                egui::ScrollArea::vertical()
+                    .max_height(h)
+                    .show(ui, |ui| {
+                        ui.set_height(h);
+                        self.pipeline.ui(ui);
+                    });
+                
+                if BigButton::ui(ui, "💾  Save").clicked() {
+                   self.save_image_to_file();
+                }
+        });
         
         // image viewport
         egui::CentralPanel::default()
@@ -208,12 +197,14 @@ impl ImageEditor {
                     })
                     .show(ui, |ui| {
                         egui::Frame::none()
-                            .shadow(ctx.style().visuals.popup_shadow)
-                            .show(ui, |ui| {
-                                self.pipeline.show_current_image(ui);
-                            });
+                        .shadow(ctx.style().visuals.popup_shadow)
+                        .show(ui, |ui| {
+                            self.pipeline.show_current_image(ui);
+                        });
                     });
-            });
-            
+        
+        });
+        
+        result
     }
 }

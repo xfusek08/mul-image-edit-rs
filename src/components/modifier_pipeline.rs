@@ -120,6 +120,16 @@ impl ModifierPipeline {
             );
         }
     }
+    
+    /// returns a copy of original image with all the modifiers applied in full resolution
+    pub fn apply_to_original(&self) -> Image {
+        self.modifiers
+            .iter()
+            .fold(
+                self.original_image.clone(),
+                |acc, m| m.apply(acc)
+            )
+    }
 }
 
 

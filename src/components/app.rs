@@ -4,7 +4,7 @@ use std::sync::Arc;
 use epi::backend::RepaintSignal;
 
 use crate::utils::load_input_file;
-use crate::widgets::{CenteredWindow, FileDropper, texts};
+use crate::widgets::{CenteredWindow, FileDropper, texts, BigButton};
 use crate::data::{MultimediaFile, Tick};
 
 use super::ImageEditor;
@@ -101,20 +101,28 @@ impl App {
             
         } else if let Some(editor) = &mut self.editor {
             
-            editor.ui(ctx, frame);
+            match editor.ui(ctx, frame) {
+                super::EditorResult::Nothing => {},
+                super::EditorResult::LoadNewImage => {
+                    if let Some(file_name) = load_input_file() {
+                        self.load_image_from_file_name(file_name.as_str());
+                    }
+                },
+            }
             
         } else {
             
             // No file
             CenteredWindow::show(ctx, |ui| {
                 ui.label(texts::big("Select image to edit"));
+                ui.add_space(10.0);
                 self.open_file_dialog(ui);
             });
         }
     }
      
     fn open_file_dialog(&mut self, ui : &mut egui::Ui) {
-        if ui.button("Open file").clicked() {
+        if BigButton::ui(ui, "📂  Open file").clicked() {
             if let Some(file_name) = load_input_file() {
                 self.load_image_from_file_name(file_name.as_str());
             }
