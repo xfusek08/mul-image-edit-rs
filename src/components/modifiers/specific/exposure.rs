@@ -30,7 +30,7 @@ impl Modifier for ExposureModifier {
     }
 
     fn apply(&self, mut image: crate::components::Image) -> crate::components::Image {
-        if self.percent() == 0.0 {
+        if !self.enabled() || self.percent() == 0.0 {
             return image;
         }
         

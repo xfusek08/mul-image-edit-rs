@@ -5,6 +5,7 @@ use image::{GenericImageView, GenericImage, Pixel};
 
 use crate::constants::THUMBNAIL_SIZE;
 use crate::utils::math::clamp_magnitude;
+use crate::widgets::texts;
 use crate::{utils::math::lramp};
 
 use crate::components::modifiers::{SliderCommonDataImp, Modifier, Slider, SliderData, ModifierUi, ModifierResponse};
@@ -39,7 +40,20 @@ impl ModifierUi for CustomModifier {
         let mut matrix_changed = false;
         
         ui.vertical(|ui| {
-            
+            ui.horizontal(|ui| {
+                if ui.checkbox(self.enabled_mut(), texts::sized("Custom:", 20.0)).changed() {
+                    res = ModifierResponse::Changed;
+                }
+                ui.add_space(ui.available_width() - 45.0);
+                if ui.button(texts::sized("Reset", 17.0)).clicked() {
+                    let d = Self::default();
+                    *self.percent_mut() = d.percent();
+                    self.grading_matrix = d.grading_matrix;
+                    res = ModifierResponse::Changed;
+                }
+            });
+            ui.separator();
+
             // draw matrix editor
             ui.horizontal(|ui| {
                 macro_rules! draw_image_option { ($e:expr) => {
@@ -57,8 +71,6 @@ impl ModifierUi for CustomModifier {
                     let min = self.min_percent();
                     let max = self.max_percent();
                     let mut percent = self.percent();
-                    
-                    ui.label(format!("{}:", self.title()));
                     ui.horizontal(|ui| {
                         ui.spacing_mut().slider_width = ui.available_width() - THUMBNAIL_SIZE * 2.0 - 30.0;
                         ui.add(egui::Slider::new(&mut percent, min..=max).clamp_to_range(true));
@@ -136,7 +148,7 @@ impl Modifier for CustomModifier {
 
     fn apply(&self, mut image: crate::components::Image) -> crate::components::Image {
         
-        if self.percent() == 0.0 {
+        if !self.enabled() || self.percent() == 0.0 {
             return image;
         }
         

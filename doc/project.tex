@@ -8,6 +8,7 @@
 \usepackage{wrapfig}
 \usepackage{caption}
 \usepackage{subcaption} % add sub figures
+\usepackage{amsfonts}
 
 % \usepackage{subfig}
 % \usepackage{color}
@@ -186,7 +187,29 @@ Nejpoužívanějším formátem pro ukládání fotografií je \emph{JPEG}, kter
 
 \section{Operace nad obrázky}
 Tato sekce je zaměřena na různé operace, které se s~pixely ve framebufferu nejčastěji provádějí, otevře-li uživatel libovolný editační nástroj.
+Pro jednoduchost v základu pracujeme s modelem, kde pixel $P$ reprezentujeme takto:
+$$P = (r,g,b)$$
+Jednotlivé složky $r$, $g$ a $b$ jsou reálná čísla z intervalu $\langle0,1\rangle$.
+Tato reprezentace se vždy implicitně po provedení výpočtu namapuje na RGB24 model, který lze značit takto:
+$$P_i=(R,G,B) \quad \text{, kde }(R,G,B) \in [\![0\,..\,255]\!]^3$$
+Převod z $P$ na $P_i$ je definován po složkách:
+$$p_i=\left\lfloor 255p+\dfrac{1}{2}\right\rfloor$$
+
+\newpage
 \subsection{Jas}
+Korekce jasu je jedna z nejednodušších operací.
+Každému subpixelu přičteme hodnotu $\delta$ o kterou chceme obraz zesvětlit či ztmavit.
+$$
+P' =
+\begin{bmatrix}
+    crop(r+\delta, 0, 1) \\
+    crop(g+\delta, 0, 1) \\
+    crop(b+\delta, 0, 1)
+\end{bmatrix}
+\quad
+\text{, kde }\delta \in \langle-1,1\rangle
+$$
+
 \subsection{Kontrast}
 \subsection{Teplota barvy}
 \subsection{Tónování}

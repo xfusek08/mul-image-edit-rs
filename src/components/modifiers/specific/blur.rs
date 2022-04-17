@@ -34,7 +34,7 @@ impl Modifier for BlurModifier {
     }
 
     fn apply(&self, mut image: crate::components::Image) -> crate::components::Image {
-        if self.percent() == 0.0 {
+        if !self.enabled() || self.percent() == 0.0 {
             return image;
         }
         image.raw_image =  image.raw_image.blur(lramp(0.0, MAX_BLUR, self.percent() * 0.01));

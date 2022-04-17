@@ -1,5 +1,5 @@
 
-use crate::{components::Image, constants::{THUMBNAIL_SIZE, RIGHT_PANEL_WIDTH}};
+use crate::{components::Image, constants::{THUMBNAIL_SIZE, RIGHT_PANEL_WIDTH}, widgets::texts};
 use super::{Modifier, ModifierResponse, ModifierUi};
 
 pub trait Slider : Modifier + Default {
@@ -14,12 +14,16 @@ pub trait Slider : Modifier + Default {
     fn min_thumbnail(&mut self) -> &mut Option<crate::components::Image>;
     fn max_thumbnail(&mut self) -> &mut Option<crate::components::Image>;
     
+    fn enabled(&self) -> bool;
+    fn enabled_mut(&mut self) -> &mut bool;
+    
     fn set_percent(&mut self, value: f32) {
         *self.percent_mut() = value.clamp(self.min_percent(), self.max_percent());
     }
     
     fn with_thumbnails(original_thumbnail: &Image) -> Self {
         let mut tmp_instance = Self::default();
+        *tmp_instance.enabled_mut() = true;
         
         // if given image is bigger than allowed thumbnail size create a thumbnail of proper size
         let thumbnail =  if original_thumbnail.size_vec2().max_elem() > THUMBNAIL_SIZE {
@@ -50,33 +54,53 @@ impl<T: SliderCommonUiImpl> ModifierUi for T {
     fn ui(&mut self, ui: &mut egui::Ui) -> ModifierResponse {
         let mut res = ModifierResponse::Nothing;
         
-        ui.horizontal(|ui| {
-            macro_rules! draw_image_option { ($e:expr) => {
-                if let Some(image) = $e {
-                    image.show_sized(ui, [THUMBNAIL_SIZE, THUMBNAIL_SIZE].into());
-                };
-            }}
-            
-            draw_image_option!(self.min_thumbnail());
-            ui.vertical(|ui| {
-                
-                let min = self.min_percent();
-                let max = self.max_percent();
-                let mut percent = self.percent();
-                
-                ui.label(format!("{}:", self.title()));
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().slider_width = ui.available_width() - THUMBNAIL_SIZE * 2.0 - 25.0;
-                    ui.add(egui::Slider::new(&mut percent, min..=max).clamp_to_range(true));
-                    ui.label(self.units_name());
-                });
-                
-                if percent != self.percent() {
-                    self.set_percent(percent);
+        ui.vertical(|ui| {
+            ui.set_min_height(THUMBNAIL_SIZE);
+            ui.horizontal(|ui| {
+                let l = format!("{}:", self.title());
+                if ui.checkbox(self.enabled_mut(), texts::sized(&l, 20.0)).changed() {
+                    res = ModifierResponse::Changed;
+                }
+                ui.add_space(ui.available_width() - 45.0);
+                if ui.button(texts::sized("Reset", 17.0)).clicked() {
+                    *self.percent_mut() = T::default().percent();
                     res = ModifierResponse::Changed;
                 }
             });
-            draw_image_option!(self.max_thumbnail());
+            ui.separator();
+            ui.horizontal(|ui| {
+                macro_rules! draw_image_option { ($e:expr) => {
+                    if let Some(image) = $e {
+                        image.show_sized(ui, [THUMBNAIL_SIZE, THUMBNAIL_SIZE].into());
+                    };
+                }}
+                
+                draw_image_option!(self.min_thumbnail());
+                ui.vertical(|ui| {
+                    
+                    let min = self.min_percent();
+                    let max = self.max_percent();
+                    // let step = (max - min) / 100.0;
+                    let mut percent = self.percent();
+                    
+                    ui.horizontal(|ui| {
+                        ui.set_height(THUMBNAIL_SIZE);
+                        ui.spacing_mut().slider_width = ui.available_width() - THUMBNAIL_SIZE * 2.0 - 25.0;
+                        ui.add(
+                            egui::Slider::new(&mut percent, min..=max)
+                                // .step_by(step as f64)
+                                .clamp_to_range(true)
+                        );
+                        ui.label(self.units_name());
+                    });
+                    
+                    if percent != self.percent() {
+                        self.set_percent(percent);
+                        res = ModifierResponse::Changed;
+                    }
+                });
+                draw_image_option!(self.max_thumbnail());
+            });
         });
         
         res
@@ -85,6 +109,7 @@ impl<T: SliderCommonUiImpl> ModifierUi for T {
 
 // Trait with common implementation for slider data
 pub(crate) struct SliderData {
+    pub enabled: bool,
     pub percent: f32,
     pub units_name: &'static str,
     pub min: f32,
@@ -95,6 +120,7 @@ pub(crate) struct SliderData {
 impl Default for SliderData {
     fn default() -> Self {
         Self {
+            enabled: true,
             percent: 0.0,
             units_name: "%",
             min: -100.0,
@@ -118,4 +144,7 @@ impl<T: SliderCommonDataImp + Modifier + Default> Slider for T {
     
     fn min_thumbnail(&mut self) -> &mut Option<Image> { &mut self.slider_data_mut().min_thumbnail }
     fn max_thumbnail(&mut self) -> &mut Option<Image> { &mut self.slider_data_mut().max_thumbnail }
+    
+    fn enabled(&self) -> bool  { self.slider_data().enabled }
+    fn enabled_mut(&mut self) -> &mut bool { &mut self.slider_data_mut().enabled }
 }

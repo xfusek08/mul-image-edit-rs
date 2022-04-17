@@ -15,10 +15,11 @@ use crate::{
     constants::{RIGHT_PANEL_WIDTH, THUMBNAIL_SIZE}
 };
 
+use super::modifiers::specific::{BMulLumaModifier, GammaModifier};
 use super::{
     modifiers::{
         Slider,
-        specific::{ExposureModifier, ContrastModifier, BlurModifier, SepiaModifier, TintModifier, CustomModifier}
+        specific::{ExposureModifier, ContrastModifier, BlurModifier, SepiaModifier, TintModifier, CustomModifier, BMulModifier}
     },
     ModifierPipeline,
     Image
@@ -51,9 +52,11 @@ impl ImageEditor {
                 
                 let tm = pipeline.original_image().thumbnail(THUMBNAIL_SIZE as u32, THUMBNAIL_SIZE as u32);
                 pipeline.push_modifier(Box::new(ExposureModifier::with_thumbnails(&tm)));
+                pipeline.push_modifier(Box::new(GammaModifier::with_thumbnails(&tm)));
+                pipeline.push_modifier(Box::new(BMulLumaModifier::with_thumbnails(&tm)));
+                pipeline.push_modifier(Box::new(BMulModifier::with_thumbnails(&tm)));
                 pipeline.push_modifier(Box::new(ContrastModifier::with_thumbnails(&tm)));
                 pipeline.push_modifier(Box::new(BlurModifier::with_thumbnails(&tm)));
-                pipeline.push_modifier(Box::new(SepiaModifier::with_thumbnails(&tm)));
                 pipeline.push_modifier(Box::new(TintModifier::with_thumbnails(&tm)));
                 pipeline.push_modifier(Box::new(CustomModifier::with_thumbnails(&tm)));
                 
@@ -173,7 +176,7 @@ impl ImageEditor {
                 egui::ScrollArea::vertical()
                     .max_height(h)
                     .show(ui, |ui| {
-                        ui.set_height(h);
+                        // ui.set_height(h);
                         self.pipeline.ui(ui);
                     });
                 
