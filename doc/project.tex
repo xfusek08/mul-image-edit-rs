@@ -243,7 +243,7 @@ Jelikož operace \uv{expozice} a~\uv{gamma} nedávají moc pěkné výsledky.
 Byla experimentální formou implementována vlastní formule, která se pokouší o~zesvětlení a~ztmavení obrazu při zachování vnímaného kontrastu.
 Finální filtr se v~aplikaci jmenuje \uv{Brightness multiply luma}, a~vyhází z~násobení každého pixelu konstantou, které jse pro srovnání implementováno jako filtr \uv{Brightness multiply}.
 Uživatel v~editoru nastaví hodnotu $a \in \langle-5,5\rangle$, ze kterého se vypočítá koeficient $c$:
-$$c=1+c\,(1 - Y^\gamma)$$
+$$c=1+a\,(1 - Y^\gamma)$$
 , kde $Y$ je světelná složka z~YUV barevného modelu\cite{wiki:YCbCr} daného pixelu a~$\gamma \in \langle0,1;1,5\rangle$ je rovněž nastavitelná v~GUI a~ve výchozím stavu má hodnotu $0,5$.
 Koeficientem $c$ je následně Y~složka vynásobena a~barva pixelu je opět korektně převedena na RGB hodnotu.
 Operace má tedy vestavěnou gamma korekci a~světelnost se upravuje pomocí skutečné světelné složky.
