@@ -28,11 +28,6 @@
     \renewcommand{\uv}[1]{``#1''}
 }
 
-% \title{Editory digitální fotografie}
-% \subtitle{FYO - Fyzikální optika}
-% \author{Petr Fusek <xfusek08@stud.fit.vutbr.cz>}
-% \date{\today}
-
 
 %--------------------------------------------------------------------------------
 
@@ -44,9 +39,9 @@
         \vspace{0.1 cm}
         \textsc{\LARGE Vysoké učení technické v~Brně}\\
         \vspace{\stretch{0.39}}
-        {\Huge FYO -- Fyzikální optika}\\
+        {\Huge MUL -- Multimédia}\\
         \vspace{\stretch{0.01}}
-        {\huge Editory digitálních fotografií}
+        {\huge Aplikace pro zpracování obrázků a~videí}
         \vspace{\stretch{0.62}}
     \end{center}
     \begin{center}
@@ -58,186 +53,73 @@
 \end{titlepage}
 
 
-\section{Úvod}
-První myšlenka digitální fotografie, byla v~podobě \uv{telefotografie}.
-Shelford Bidwell, byl kolem roku 1880 schopen zakódovat obrazové informace pomocí elektrických signálů, které posílal pomocí telegrafu.
-Na druhé straně bylo zařízení, které obraz rekonstruovalo řádek po řádku vypalováním obrazových bodů do papíru napuštěného draslíkatým roztokem.
-V~roce 1957 Russell Kirsch digitalizoval fotku svého syna a~uložil jí v~malém digitálním souboru na jednom z~raných počítačů.
-V~roce 1068 byl sestrojen první senzor, který jako první ukládal světelná data přímo v~digitální podobě, na základě této technologie byla v~roce 1973 postavena první digitální kamera, schopna ukládat obrázky o~rozlišení 0.8 megapixelů.
-\cite{first_digital_photography}
- 
-První veřejně dostupné digitální fotoaparáty se začali objevovat začátkem devadesátých let a~spolu s~nimi výrobci dodávali software, který umožňoval z~fotoaparátu obrázky stáhnout a~dokonce i~upravovat.
-První digitální editor ovšem byl součástí digitálního scanneru \uv{Barneyscanner} z~roku 1989, který mohl být použitý k~digitalizaci klasických fotografií a~jejich úpravám.
-Tento editor se posléze začal prodávat separátně pod jménem \emph{Adobe Photoshop}.
-Photoshop je dnes synonymem pro digitální manipulaci obrázků a~dominuje tento stále rostoucí trh. \cite{digital_editing_histroy}
+\section{Zadání}
+Implementujte aplikaci, která bude umožňovat zpracování obrázků (ostření, hrany, úprava barevnosti).
+Kromě kvalitního GUI též implementujte schopnosti aplikace pro práci s~videosekvencemi - spouštění, zjištění kodeku, výběr/vložení úseku apod.
 
-V~dnešní době jsme si zvykli na základní úpravy obrázků do takové míry, že možnost změnit vlastnosti jako je velikost, jas, kontrast, teplota barev apod., jsou standardem pro jakýkoliv software pracující, nebo jen zobrazující digitální fotografie.
-V~této práci se zaměřím na základní teorii a~matematiku schovanou pod některými dobře známými posuvníky.
-Například jak a~co je gamma korekce, jak naprogramovat barevný filtr a~jak nejlépe zesvětlit obraz.
+\section{Zvolené Technologie}
+Pro implementaci multiplatformní aplikace s~grafickým uživatelským rozhranním byl zvolen programovací jazyk \texttt{Rust}\footnote{\url{https://www.rust-lang.org/}}, který v~poslední době nabývá na popularitě především v~rámci open-source komunity a~klade si za cíl být systémovým programovacím jazykem nové generace.
+Jeho výhody jsou ve vysoké úrovni abstrakce a~formálnosti, která zaručuje bezpečnou práci s~pamětí, bez obětování výkonu během jeho běhu (neobsahuje interpret ani \emph{garbage collector}) a~tím dosahuje výkonu srovnatelného s~\texttt{C++}.
 
-\section{Barva a~digitální obraz}
-Každý článek o~barvě začíná její definicí jako vjemový zážitek způsobený dopadajícím světlem o~vlnových délkách cca od 400\,nm to 700\,nm, pokračující popisem lidského oka (viz, \cite{wiki:Color},\cite{mul_opora}).
-Co je důležité si z~těchto poznatků odnést je, že pořizování, reprezentace v~počítači a~reprodukce barevných obrázků ve všech případech vychází z~toho, jak lidské oko a~mozek reprezentuje barvy.
+Pro implementaci grafického uživatelské rozhraní je použita knihovna \texttt{egui}\footnote{\url{https://github.com/emilk/egui}}, která alternativou populárního \texttt{Dear ImGui} (\texttt{C/C++}) pro implementovaná v~Rustu a~na pozadí používá grafické API \texttt{OpenGL}\footnote{\url{https://www.opengl.org/}}.
+Díky těmto technologiím lze aplikaci přeložit téměř pro všechny platformy podporující \texttt{OpenGL}.
 
-RGB model, který je používaný v~monitorech pro reprodukci obrazu, je kombinace množství červeného (R), zeleného (G) a~modrého (B) světla, což více méně odpovídá citlivostem 3~barvo-citlivých buněk na sítnici oka.
-Na co je ale sítnice nejcitlivější je intenzita dopadajícího světla a~její citlivost se mění pro každou barvu.
-Proto intenzita každé složky je nějak empiricky navážena a~manipulace s~nimi či transformace do jiných barevných prostorů jsou otázkou rozsáhlých standardů \cite{wiki:Color_space}.
-   
-\subsection{Barevné prostory a~modely} \label{color_spaces}
-\emph{Barevný prostor} je způsob jakým organizujeme barvy, tak aby jeden bod tohoto prostoru odpovídal jedné konkrétní barvě.
-Referenčním standardem je barevný prostor \emph{CIELAB} ($L^*a^*b^*$), který obsahuje všechny barvy, které je lidské oko teoreticky schopno rozeznat \cite{wiki:CIELAB_color_space}.
+\subsection{Seznam použitých knihoven}
+Toto je kompletní seznam knihoven a~ke kterému účelu byly použity během implementace.
+\begin{itemize}
+    \item {
+        \texttt{egui} - \emph{immediate mode} grafické uživatelské rozhraní.\\
+        {\small\url{https://github.com/emilk/egui}}
+    }
+    \item {
+        \texttt{file-format} - Detekce správného formátu vstupního souboru.\\
+        {\small\url{https://github.com/mmalecot/file-format}}
+    }
+    \item {
+        \texttt{rfd} - Multiplatformní dialog pro výběr vstupního souboru.\\
+        {\small\url{https://github.com/PolyMeilex/rfd}}
+    }
+    \item {
+        \texttt{indoc} - Vylepšení nativních maker ve zdrojovém kódu.\\
+        {\small\url{https://github.com/dtolnay/indoc}}
+    }
+    \item {
+        \texttt{image} - Knihovna pro zpracování obrázků.\\
+        {\small\url{https://github.com/image-rs/image}}
+    }
+    \item {
+        \texttt{cgmath} - Abstraktní matematická knihovna obsahující vektorový a~maticový počet.\\
+        {\small\url{https://github.com/rustgd/cgmath}}
+    }
+\end{itemize}
 
-\emph{Barvený model} je potom matematická abstrakce (množina hodnot), které mapujeme na barevný prostor, který je většinou podmnožinou prostoru referenčního.
-Tyto prostory potom slouží jako standard pro kalibraci zobrazovacích a~zaznamenávacích zařízení \cite{wiki:Color_space}.
-
-\subsubsection{RGB}
-
-\begin{wrapfigure}[6]{r}{4.5cm}
-    \centering
-    \vspace{-1cm}
-    \includegraphics[width=3cm]{RGB_cube.png}
-    \caption{RGB prostor \cite{wiki:RGB_color_model}}
-\end{wrapfigure}
-
-RGB je asi nejrozšířenější barevný model reprezentovaný jako uspořádaná trojice $(R,G,B)$ hodnot.
-Standardizované barevné prostory založené právě na trojicích RGB jsou třeba \emph{Adobe\,RGB}\footnote{\url{https://www.iso.org/standard/45115.html}} nebo \emph{sRGB}\footnote{\url{https://webstore.iec.ch/publication/6169}}.
-
-Popisuje množství světla určitých frekvencí, kterým musí být osvícena sítnice, tak aby jsme jej vnímali jako konkrétní barvu.
-Čím více světla (hodnoty) v~každé složce, tím více se blížíme bílé barvě.
-Světlo se takto sčítá a~hovoříme o~modelu \emph{aditivním}.
-
-
-\subsubsection{Y$\text{C}_\text{b}\text{C}_\text{r}$}
-\begin{wrapfigure}[12]{r}{5cm}
-    \centering
-    \includegraphics[width=4cm]{YCBCR.png}
-    \caption{$\text{C}_\text{b}\text{C}_\text{r}$ výřez při $Y=0.5$ \cite{wiki:YCbCr}.}\label{wrap-fig:1}
-\end{wrapfigure}
-Model Y$\text{C}_\text{b}\text{C}_\text{r}$ byl vyvinut pro televizní přenosy obrazového signálu, který musel být zpětně kompatibilní s~černobílými televizory.
-Využívá právě citlivosti na jas lidského zraku a~většina informací a~detailů je uchována v~jasové Y~složce, čili při zpracování pouze Y~informace dostaneme obraz černobílý.
-Složky $\text{C}_\text{b}$ a~$\text{C}_\text{r}$ složí k~posunu jasové informace směrem k~jedné z~barev.
-Jasová složka se technicky nazývá \emph{luma} a~z RGB modelu ji lze vypočítat navážením
-barvených složek podle empirických citlivostí lidského oka na jednotlivé barvy \cite{mul_opora}:
-$$
-\begin{bmatrix}Y\\C_b\\C_r\end{bmatrix}
-=
-\begin{bmatrix}0\\128\\128\end{bmatrix}
-+
-\begin{bmatrix}
-    0,\!299 & 0,\!587 & 0,\!114 \\
-    -\,0,\!16875 & -\,0,\!33126 & 0,\!5 \\
-    0,\!5 & -\,0,\!41869 & -\,0,\!08131 \\
-\end{bmatrix}
-\cdot
-\begin{bmatrix}R\\G\\B\end{bmatrix}
-$$
-Výše uvedené koeficienty jsou navrženy pro rychlý přepočet při televizním vysílání, existuje celá škála různých koeficientů pro různé standardy a~formáty s~různými přesnostmi \cite{wiki:YCbCr}.
-
-\subsubsection{HSL a~HSV} \label{hsv/hsl}
-HSL a~HSV modely reprezentují intuitivní míchání barev, a~byly vytvořeny, tak aby si uživatel mohl zvolit jak \uv{saturovaná} či jak \uv{světlá} vybraná barva bude.
-Prostory jsou v~obou případech válce, kde H~představuje úhel pootočení kolem jeho osy a~tím se zvolí odstín barvy.
-S~označuje vzdálenost od osy válce, která symbolizuje saturaci barvy.
-L~nebo V~jsou hodnoty jak vysoko se nacházíme s~tím, že L~představuje světlost (maximální L~se rovná bílé) a~V \uv{sílu} zvoleného odstínu (maximální V~je maximálně saturovaná barva) viz obrázek \ref{fig:hsv_hsl}.
-\begin{figure}[h]
-    \centering
-    \begin{subfigure}[b]{0.3\textwidth}
-        \includegraphics[height=4cm]{HSL.png}
-        \caption{$HSL$}
-        \label{fig:hsv_hsl:hsl}
-    \end{subfigure}
-    \hspace{0.2cm}
-    \begin{subfigure}[b]{0.3\textwidth}
-        \includegraphics[height=4cm]{HSV.png}
-        \caption{$HSV$}
-        \label{fig:hsv_hsl:hsv}
-    \end{subfigure}
-    
-    % \includegraphics[height=4cm]{HSL.png}
-    \caption{Barevné válce \cite{wiki:HSL_and_HSV}}
-    
-    \label{fig:hsv_hsl}
-\end{figure}
-
-\subsection{Reprezentace obrazu v~počítači}
-Existuje mnoho způsobů jak ukládat obrazová data v~lineární paměti počítače.
-Obrázek je dvourozměrná matice (nebo chcete-li funkce $f(x,y)$), kde jedna hodnota se nazývá pixel (picture element).
-Pixely jsou body z~nějakého barevného modelu (viz. \ref{color_spaces}), nejčastěji RGB, tedy 3~hodnoty, kde $(0,0,0)$ udává barvu černou a~$(\text{\small MAX}, \text{\small MAX}, \text{\small MAX})$ barvu bílou.
-Jednotlivé barevné složky se nazývají subpixely a~jejich hodnota \uv{$\text{\small MAX}$} je dána počtem bytů, na kterém složky chceme reprezentovat.
-Hodnotám subpixelů je nejčastěji rezervován jeden bajt (8 bitů) čili celočíselné hodnoty z~intervalu $\langle0;255\rangle$.
-Vzniká tak prostor čítající $256^3 = 16\,777\,216$ možných barev, což je pro běžného člověka dostatečné množství.
-Pokud jsou jednotlivé hodnoty v~pamětu uloženy těsně za sebou v~pořadí R-G-B, vychází na jeden pixel 24 bitů a~značíme jej jako pixel o~formátu RGB24.
-Existuje celá řada formátů jejichž označení vypovídá o~jejich rozložení a~velikosti v~paměti (RGB555, BRG24, RGBA32\footnote{A složka označuje alfa kanál, který přižazuje míru průhlednosti pixelu.}, ...) \cite{mul_opora}.
-
-Takto nekomprimovaná obrazová data jsou v~sérii pixel po pixelu uloženy v~paměti nazývané \emph{framebuffer}.
-Obrázek má definovaný počet sloupců a~počet řádků.
-Jsou očekávávatelně sekvence pixelů jdoucí za sebou, ale v~paměti mohou být řádky uspořádané shora dolů nebo zespodu nahoru.
-Mezi řádky se rovněž vkládá \emph{padding}, tak aby jejich začátky byly zarovnané a~adresovatelné pro rychlejší přístup k~paměti (rozložení můžete vidět na obrázku \ref{fig:framebuffer}).
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.9\textwidth]{framebuffer.png}
-    \caption{Rozložení framebuffer v~paměti \cite{Whatdoes20:online}}
-    \label{fig:framebuffer}
-\end{figure}
-
-S~takto uloženými daty je možno libovolně manipulovat a~zobrazovat je uživateli.
-Pro jejich ukládání se volí různé kompresní formáty, které jsou mimo záběr této práce.
-Editor ovšem musí vždy takový komprimovaný obrázek umět načíst ze souboru do nekomprimovaného framebufferu a~po provedených změnách jej v~komprimované podobě zase uložit. Velkost nekomprimovaného  framebufferu je z~pravidla řádově větší než velikost komprimovaných dat.
-Nejpoužívanějším formátem pro ukládání fotografií je \emph{JPEG}, který provádí ztrátovou kompresi a~pro bezztrátovou kompresi obrázků s~omezenou paletou barev se využívá například formát \emph{PNG}.
-
-% \section{Operace nad obrázky}
-% Tato sekce je zaměřena na různé operace, které se s~pixely ve framebufferu nejčastěji provádějí, otevře-li uživatel libovolný editační nástroj.
-% Pro jednoduchost v základu pracujeme s modelem, kde pixel $P$ reprezentujeme takto:
-% $$P = (r,g,b)$$
-% Jednotlivé složky $r$, $g$ a $b$ jsou reálná čísla z intervalu $\langle0,1\rangle$.
-% Tato reprezentace se vždy implicitně po provedení výpočtu namapuje na RGB24 model, který lze značit takto:
-% $$P_i=(R,G,B) \quad \text{, kde }(R,G,B) \in [\![0\,..\,255]\!]^3$$
-% Převod z $P$ na $P_i$ je definován po složkách:
-% $$p_i=\left\lfloor 255p+\dfrac{1}{2}\right\rfloor$$
-
-% \newpage
-% \subsection{Expozice}
-% Korekce jasu je ve většině editorech nazývaná \uv{expozice} a většinou je implementována velice triviálním způsobem pomocí přičtení hodnoty $\delta$ ke každému subpixelu.
-% $$
-% P' =
-% \begin{bmatrix}
-%     crop(r+\delta, 0, 1) \\
-%     crop(g+\delta, 0, 1) \\
-%     crop(b+\delta, 0, 1)
-% \end{bmatrix}
-% \quad
-% \text{, kde }\delta \in \langle-1,1\rangle
-% $$
-% \subsection{Gamma}
-% Tato operace je nelineární transformací, kde dochází ke změně dynamického rozsahu pomocí mocnění hodnoty jasu. (Luma složky) na hodnotu $\gamma$ \cite{wiki:Gamma_correction}.
-% $$(Y, C_b, C_r) = to\_YC_bC_r(r,g,b)$$
-% $$P' = to\_RGB(Y^\gamma, C_b, C_r)$$
-
-% \subsection{Kontrast}
-% Kontrastem rozumíme změnu rozdílu
-% \subsection{Teplota barvy}
-% \subsection{Tónování}
-% \subsection{Rozmazání a~Filtrace}
 \section{Implementace}
-V rámci práce byl implementován jednoduchý editor, který demonstruje možnosti základních filtrovacích operací/transformací nad daty nahraného obrázku.
+V rámci projektu byl implementován jednoduchý editor, umožňuje a~aplikovat různé barevné filtrovací operace/transformace pro obrázky ve formátu \texttt{jpeg}.
 
-K implementaci byl použit programovací jazyk rust\footnote{\url{https://www.rust-lang.org/}} s knihovnou \texttt{egui}\footnote{\url{https://github.com/emilk/egui}} pro implementaci aplikací s grafickým uživatelským rozhraním.
-Díky těmto technologiím lze aplikaci přeložit téměř pro všechny platformy podporující grafické rozhraní \texttt{OpenGL}\footnote{\url{https://www.opengl.org/}}.
-\subsection{Implementované operace}
-Aplikace funguje tak, že po spuštění se objeví uvítací obrazovka, která vyzve uživatele aby vybral obrázek ze svého počítače. Poté mu je umožněno aplikovat sérii filtrů, které jsou popsány níže.
-Hlavní obrazovka editoru je vidět na obrázku \ref{fig:screenshot}.
-\begin{figure}[h]
+\subsection{Popis aplikace}
+
+Rozložení grafického rozhraní aplikace ukazuje obrázek \ref{fig:screenshot}.
+Aplikace funguje tak, že po spuštění se objeví uvítací obrazovka, která vyzve uživatele aby vybral obrázek ze svého počítače.
+Poté mu je umožněno aplikovat sérii filtrů, jejichž efekty jsou viditelné v~reálném čase.
+Filtry jsou aplikovány v~sérii za sebou v~pořadí shora dolů, jak jsou vykresleny.
+Nahází se zde tlačítko \uv{Open}, které umožní změnit právě editovaný obrázek za jiný z~počítače.
+Po dokončení úprav je možné soubor uložit pomocí tlačítka \uv{Save}.
+Na spodní liště jsou vidět informace o~právě editovaném obrázku.
+
+\begin{figure}
     \centering
     \includegraphics[width=0.9\textwidth]{screenshot.png}
     \caption{Snímek hlavní obrazovky editoru}
     \label{fig:screenshot}
 \end{figure}
 
+\subsection{Popis implementovaných filtrů}
+
 \subsubsection{Expozice}
 Nejjednodušším filtrem je expozice, která je součástí každého editoru.
-její implementace spočívá v přičtení konstantní hodnoty ke všem subpixelům.
+její implementace spočívá v~přičtení konstantní hodnoty ke všem subpixelům.
 $$P' = \delta + P$$
-Na obrázku \ref{fig:exposure} je vidět přitení záporné hodnoty pro ztmavení a kladné pro zesvětlení.
+Na obrázku \ref{fig:exposure} je vidět přičtení záporné hodnoty pro ztmavení a~kladné pro zesvětlení.
 \begin{figure}[h]
     \centering
     \begin{subfigure}[t]{0.25\textwidth}
@@ -260,14 +142,14 @@ Na obrázku \ref{fig:exposure} je vidět přitení záporné hodnoty pro ztmaven
     \caption{Výsledky operace \uv{Expozice}}
     \label{fig:exposure}
 \end{figure}
-Zde je vidět, že efekt není příliš šetrný a způsobuje bílou mlhu a nezachovává stíny.
+Zde je vidět, že efekt není příliš šetrný a~způsobuje bílou mlhu a~nezachovává stíny.
 
 \subsubsection{Gamma}
-Gamma korekce je nelineární transformace pracující s jasovou složkou obrázku.
+Gamma korekce je nelineární transformace pracující s~jasovou složkou obrázku.
 Počítá se umocněním jasu na hodnotu $\gamma \leq 0$ \cite{wiki:Gamma_correction}.
 $$V_{out}=V_{in}^\gamma$$
-Pokud $\gamma < 1.0$ tmavší pixely budou zesvětleny a čím více pixel světlejší je, tím méně bude ovlivněn.
-Při $\gamma > 1.0$ budou hodnoty tmavších pixelů zredukovány a zvýší se tak kontrast světlé vůči tmavé.
+Pokud $\gamma < 1.0$ tmavší pixely budou zesvětleny a~čím více pixel světlejší je, tím méně bude ovlivněn.
+Při $\gamma > 1.0$ budou hodnoty tmavších pixelů zredukovány a~zvýší se tak kontrast světlé vůči tmavé.
 Výsledek této operace je vidět na obrázku \ref{fig:gamma}.
 \begin{figure}[h]
     \centering
@@ -291,18 +173,18 @@ Výsledek této operace je vidět na obrázku \ref{fig:gamma}.
     \caption{Výsledky operace \uv{Gamma}}
     \label{fig:gamma}
 \end{figure}
-Oproti jednoduché expozici bílá mlha není tak nápadná a ztmavení se jeví více vyrovnaným dojmem.
+Oproti jednoduché expozici bílá mlha není tak nápadná a~ztmavení se jeví více vyrovnaným dojmem.
 
 \subsubsection{Kontrast}
-Úprava kontrastu znamená, že měníme relativní rozdíl barvy a jasu pixelu oproti středí hodnotě celého obrázku \cite{wiki:Contrast_vision}.
-Současná implementace je v tomto případě záležitostí použité knihovny \texttt{image}\footnote{\url{https://github.com/image-rs/image}}.
+Úprava kontrastu znamená, že měníme relativní rozdíl barvy a~jasu pixelu oproti středí hodnotě celého obrázku \cite{wiki:Contrast_vision}.
+Současná implementace je v~tomto případě záležitostí použité knihovny \texttt{image}.
 Výsledek je vidět na obrázku \ref{fig:contrast};
 \begin{figure}[h]
     \centering
     \begin{subfigure}[t]{0.25\textwidth}
         \vskip 0pt
         \includegraphics[width=1.0\textwidth]{horse_contrast_minus.jpg}
-        \caption{Snížený o 50\%}
+        \caption{Snížený o~50\%}
     \end{subfigure}
     \hspace{1cm}
     \begin{subfigure}[t]{0.25\textwidth}
@@ -314,7 +196,7 @@ Výsledek je vidět na obrázku \ref{fig:contrast};
     \begin{subfigure}[t]{0.25\textwidth}
         \vskip 0pt
         \includegraphics[width=1.0\textwidth]{horse_contrast_plus.jpg}
-        \caption{Zvýšený o 50\%}
+        \caption{Zvýšený o~50\%}
     \end{subfigure}
     \caption{Výsledky operace úpravy kontrastu}
     \label{fig:contrast}
@@ -323,27 +205,21 @@ Výsledek je vidět na obrázku \ref{fig:contrast};
 
 \subsubsection{Rozmazání}
 Efekt rozmazání se docílí pomocí zprůměrování hodnot současného okolních pixelů.
-Současná implementace je v tomto případě záležitostí použité knihovny \texttt{image}.
-\begin{figure}[h]
-    \centering
-    \includegraphics[height=5cm]{horse_blur.jpg}
-    \caption{Maximální rozmazání, které aplikace dovoluje.}
-    \label{fig:blur}
-\end{figure}
+Současná implementace je v~tomto případě záležitostí použité knihovny \texttt{image}.
 
 \subsubsection{Rotace odstínu}
-Tato operace pracuje s HSV nebo HSL barevným prostorem \ref{hsv/hsl}.
-Každý pixel obrázku se převede do odpovídající HSL / HSV reprezentace a upraví se hodnota H (hue).
-Tato hodnota udává velikost úhlu otočení kolem osy barevného válce, je tedy periodická a nabývá hodnoty 0 až $360^\circ$.
+Tato operace pracuje s~HSV nebo HSL barevným prostorem \cite{wiki:HSL_and_HSV}.
+Každý pixel obrázku se převede do odpovídající HSL / HSV reprezentace a~upraví se hodnota H~(hue).
+Tato hodnota udává velikost úhlu otočení kolem osy barevného válce, je tedy periodická a~nabývá hodnoty 0~až $360^\circ$.
 Hodnoty podle úhlu jsou znázorněny na obrázku \ref{fig:huerotate-scale}.
 \begin{figure}[h]
     \centering
     \includegraphics[width=7cm]{hue_scale.png}
-    \caption{Barvy odpovídající úhlu H v HSV nebo HSL modelu \cite{wiki:Hue}.}
+    \caption{Barvy odpovídající úhlu H~v HSV nebo HSL modelu \cite{wiki:Hue}.}
     \label{fig:huerotate-scale}
 \end{figure}
 
-Na obrázku \ref{fig:huerotate-res} jsou vidět aplikované inkrementy H o určitý úhel.
+Na obrázku \ref{fig:huerotate-res} jsou vidět aplikované inkrementy H~o určitý úhel.
 \begin{figure}[h]
     \centering
     \begin{subfigure}[t]{0.4\textwidth}
@@ -357,97 +233,45 @@ Na obrázku \ref{fig:huerotate-res} jsou vidět aplikované inkrementy H o urči
         \includegraphics[width=1.0\textwidth]{horse_hue_240.jpg}
         \caption{$H + 240^\circ$}
     \end{subfigure}
-    \caption{Ukázka rotace odstínu o určité úhly.}
+    \caption{Ukázka rotace odstínu o~určité úhly.}
     \label{fig:huerotate-res}
 \end{figure}
 
 \subsubsection{Vlastní operace zesvětlení}
-Jelikož operace \uv{expozice} a \uv{gamma} nedávají moc pěkné výsledky.
-Byla implementována vlastní formule, která se pokouší o zesvětlení a ztmavení obrazu při zachování vnímaného kontrastu.
+Jelikož operace \uv{expozice} a~\uv{gamma} nedávají moc pěkné výsledky.
+Byla experimentální formou implementována vlastní formule, která se pokouší o~zesvětlení a~ztmavení obrazu při zachování vnímaného kontrastu.
+Finální filtr se v~aplikaci jmenuje \uv{Brightness multiply luma}, a~vyhází z~násobení každého pixelu konstantou, které jse pro srovnání implementováno jako filtr \uv{Brightness multiply}.
+Uživatel v~editoru nastaví hodnotu $a \in \langle-5,5\rangle$, ze kterého se vypočítá koeficient $c$:
+$$c=1+c\,(1 - Y^\gamma)$$
+, kde $Y$ je světelná složka z~YUV barevného modelu\cite{wiki:YCbCr} daného pixelu a~$\gamma \in \langle0,1;1,5\rangle$ je rovněž nastavitelná v~GUI a~ve výchozím stavu má hodnotu $0,5$.
+Koeficientem $c$ je následně Y~složka vynásobena a~barva pixelu je opět korektně převedena na RGB hodnotu.
+Operace má tedy vestavěnou gamu korekci a~světelnost se upravuje pomocí skutečné světelné složky.
 
-Prvním pokusem bylo pro zvětšení barev použít násobení místo inkrementace.
-Výsledek je vidět na obrázku \ref{fig:multiplication}.
-\begin{figure}[h]
-    \centering
-    \begin{subfigure}[t]{0.24\textwidth}
-        \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{horse_mul_down.jpg}
-        \caption{$c = 0.5$}
-    \end{subfigure}
-    \begin{subfigure}[t]{0.24\textwidth}
-        \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{horse_original.jpg}
-        \caption{$c = 1$ -- původní}
-    \end{subfigure}
-    \begin{subfigure}[t]{0.24\textwidth}
-        \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{horse_mul_up.jpg}
-        \caption{$c = 2.0$}
-    \end{subfigure}
-    \begin{subfigure}[t]{0.24\textwidth}
-        \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{horse_exposure_plus.jpg}
-        \caption{Zesvětlení pomocí \uv{expozice} pro srovnání}
-    \end{subfigure}
-    \caption{Ztmavení a zesvětlení pomocí násobení skalární hodnotou $c$.}
-    \label{fig:multiplication}
-\end{figure}
-
-Je vidět zlepšení vizuální kvality, kde kontrast neutrpěl změnu.
-Lze si všimnout, že tmavé hodnoty nejsou ovlivněny tak moc jako světlé, které většinou velice rychle dosáhnou maximální hodnoty a tvoří přepaly.
-Proto byla implementována formule s gamma korekcí, která nelineárně změní hodnotu násobícího koeficientu, tak aby byly více ovlivněny body tmavé a u světlých nedocházelo k přepalům.
-Zde je formule:
-$$P' = P\left(1 + (c - 1)(1 - L^{0.5})\right)$$
-, kde:
-\begin{itemize}
-    \item $c > 1$ -- míra zesvětlení
-    \item $L = 0,299R + 0,587G + 0.114B$ -- Světlost pixelu
-\end{itemize}
-Pro $c < 1$ se formule upraví na:
-$$P' = P\left(1 - (1 - c)(1 - L^{1.5})\right)$$
-což způsobí pomalejší úbytek  u světlejších bodů a rychlejší úbytek u bodů tmavších.
-Na obrázku \ref{fig:multiplication-luma} je vidět finální výsledek na dvou různých obrázcích.
+Na obrázku \ref{fig:multiplication-luma} je vidět finální výsledek:
 \begin{figure}[h]
     \centering
     \begin{subfigure}[t]{0.25\textwidth}
         \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{horse_mul_luma_down.jpg}
-        \caption{$c = 0.5$}
+        \includegraphics[width=1.0\textwidth]{kvetina_mul_down.jpg}
+        \caption{$a = -2$ -- tmavší}
     \end{subfigure}
     \hspace{1cm}
     \begin{subfigure}[t]{0.25\textwidth}
         \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{horse_original.jpg}
-        \caption{$c = 1$ -- původní}
+        \includegraphics[width=1.0\textwidth]{kvetina.jpg}
+        \caption{$a = 0$ -- původní}
     \end{subfigure}
     \hspace{1cm}
     \begin{subfigure}[t]{0.25\textwidth}
         \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{horse_mul_luma_up.jpg}
-        \caption{$c = 3.0$ -- Obrázek je znatelně světlejší ale nedochází k přepalům.}
+        \includegraphics[width=1.0\textwidth]{kvetina_mul_up.jpg}
+        \caption{$a = 2$ -- světlejší}
     \end{subfigure}
-    \begin{subfigure}[t]{0.25\textwidth}
-        \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{tree_luma_mult_down.jpg}
-        \caption{$c = 0.3$}
-    \end{subfigure}
-    \hspace{1cm}
-    \begin{subfigure}[t]{0.25\textwidth}
-        \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{tree_original.jpg}
-        \caption{$c = 1$ -- původní}
-    \end{subfigure}
-    \hspace{1cm}
-    \begin{subfigure}[t]{0.25\textwidth}
-        \vskip 0pt
-        \includegraphics[width=1.0\textwidth]{tree_luma_mult_up.jpg}
-        \caption{$c = 2.5$}
-    \end{subfigure}
-    \caption{Ztmavení a zesvětlení pomocí vlastní formule.}
+    \caption{Ztmavení a~zesvětlení pomocí vlastní formule.}
     \label{fig:multiplication-luma}
 \end{figure}
 
-\subsection{Obecné barevné transformace a vlastní filtry}
+\subsection{Obecné barevné transformace a~vlastní filtry}
 Aplikace umožňuje nadefinovat vlastní transformaci barev:
 $$
 P'
@@ -460,7 +284,7 @@ P'
 \cdot
 \begin{bmatrix}R\\G\\B\end{bmatrix}
 $$
-Kde $A_x$, $B_x$ a $C_x$ si lze libovolně navolit v intervalu $\langle0, 2\rangle$.
+Kde $A_x$, $B_x$ a~$C_x$ si lze libovolně navolit v~intervalu $\langle0, 2\rangle$.
 Díky tomuto lze například implementovat vlastní filtry.
 Vísledek lze vidět na obrázku \ref{fig:custom-filters}.
 \begin{figure}[h]
@@ -518,11 +342,11 @@ Vísledek lze vidět na obrázku \ref{fig:custom-filters}.
     \caption{Demonstrace příkladů vlastních filtrů.}
     \label{fig:custom-filters}
 \end{figure}
-Filtru lze také nastavit mírů aplikování, tedy lineární interpolaci mezi původním obrázkem a plně transformovaným.
+Filtru lze také nastavit mírů aplikování, tedy lineární interpolaci mezi původním obrázkem a~plně transformovaným.
 
 \section{Závěr}
-Tento projekt prozkoumal základní vlastnosti editorů a v rámci něj byla vytvořena aplikace, která demonstruje jak jednotlivé filtry fungují pomocí lineárních posuvníků.
-Rovněž umožňuje vytvoření si vlastního filtru a následně jej použít, aby uživatel pochopil, jak se jednotlivé barvy v modelu RGB chovají.
+Tento projekt prozkoumal základní vlastnosti editorů a~v rámci něj byla vytvořena aplikace, která demonstruje jak jednotlivé filtry fungují pomocí lineárních posuvníků.
+Rovněž umožňuje vytvoření si vlastního filtru a~následně jej použít, aby uživatel pochopil, jak se jednotlivé barvy v~modelu RGB chovají.
 
 \newpage
 

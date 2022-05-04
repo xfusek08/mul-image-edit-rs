@@ -20,6 +20,6 @@ glutin = "0.28.0"
 
 file-format = "0.6.0"
 rfd = "0.8.2"
-indoc = "1.0"
+indoc = "1.0.4"
 image = { version = "0.24.1", features = ["jpeg", "png"] }
 cgmath = "0.18.0"

@@ -16,8 +16,8 @@ impl Default for BMulLumaModifier {
             data: SliderData {
                 units_name: "",
                 percent: 0.0,
-                min: -2.0,
-                max: 2.0,
+                min: -5.0,
+                max: 5.0,
                 ..Default::default()
             }
         }
