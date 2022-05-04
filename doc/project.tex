@@ -102,13 +102,14 @@ Rozložení grafického rozhraní aplikace ukazuje obrázek \ref{fig:screenshot}
 Aplikace funguje tak, že po spuštění se objeví uvítací obrazovka, která vyzve uživatele aby vybral obrázek ze svého počítače.
 Poté mu je umožněno aplikovat sérii filtrů, jejichž efekty jsou viditelné v~reálném čase.
 Filtry jsou aplikovány v~sérii za sebou v~pořadí shora dolů, jak jsou vykresleny.
+Při stisknutí mezerníku se zobrazí originální obrázek bez úprav.
 Nahází se zde tlačítko \uv{Open}, které umožní změnit právě editovaný obrázek za jiný z~počítače.
 Po dokončení úprav je možné soubor uložit pomocí tlačítka \uv{Save}.
 Na spodní liště jsou vidět informace o~právě editovaném obrázku.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.9\textwidth]{screenshot.png}
+    \includegraphics[width=0.9\textwidth]{screenshot.jpg}
     \caption{Snímek hlavní obrazovky editoru}
     \label{fig:screenshot}
 \end{figure}
@@ -245,8 +246,7 @@ Uživatel v~editoru nastaví hodnotu $a \in \langle-5,5\rangle$, ze kterého se 
 $$c=1+c\,(1 - Y^\gamma)$$
 , kde $Y$ je světelná složka z~YUV barevného modelu\cite{wiki:YCbCr} daného pixelu a~$\gamma \in \langle0,1;1,5\rangle$ je rovněž nastavitelná v~GUI a~ve výchozím stavu má hodnotu $0,5$.
 Koeficientem $c$ je následně Y~složka vynásobena a~barva pixelu je opět korektně převedena na RGB hodnotu.
-Operace má tedy vestavěnou gamu korekci a~světelnost se upravuje pomocí skutečné světelné složky.
-
+Operace má tedy vestavěnou gamma korekci a~světelnost se upravuje pomocí skutečné světelné složky.
 Na obrázku \ref{fig:multiplication-luma} je vidět finální výsledek:
 \begin{figure}[h]
     \centering
@@ -344,11 +344,17 @@ Vísledek lze vidět na obrázku \ref{fig:custom-filters}.
 \end{figure}
 Filtru lze také nastavit mírů aplikování, tedy lineární interpolaci mezi původním obrázkem a~plně transformovaným.
 
-\section{Závěr}
-Tento projekt prozkoumal základní vlastnosti editorů a~v rámci něj byla vytvořena aplikace, která demonstruje jak jednotlivé filtry fungují pomocí lineárních posuvníků.
-Rovněž umožňuje vytvoření si vlastního filtru a~následně jej použít, aby uživatel pochopil, jak se jednotlivé barvy v~modelu RGB chovají.
+\subsection{Ostatní implementační detaily}
+\subsubsection{škálování náhledu}
+Aplikace pracuje s~daty obrázku v~nekomprimovaném stavu, to znamená, že větší fotky mohou zabírat desítky megabajtů, aplikace proto provádí veškeré operace nad zmenšenou verzí původního obrazu podle velikosti náhledu na obrazovce uživatele.
+V dolní liště je vidět, jako poslední údaj, rozlišení obrázku, který se používá pro živý náhled a~na FullHD (1920x1080) monitoru tato velikost nepřesahuje 4MB.
+Filtry jsou aplikovány na obrázek v~plném rozlišení pouze jednou a~to při jeho uložení do souboru.
 
-\newpage
+\section{Závěr}
+Aplikace je jednoduchý aplikátor filtrů na obrázky s~možností jejich ukládání a~živého náhledu.
+Je uživatelsky jednoduchá a~nabízí nástroje, které umožní uživateli pochopit principy obrazových barevných filtrů na nejnižší úrovni. Z časových důvodu bohužel nebyla implementována možnost ořezání ani změna velikosti obrázku ani možnost spouštět a editovat videosekvence.
+
+Repozitář aplikace je dostupný veřejně online na platformě GitHub\footnote{\url{https://github.com/xfusek08/mul-image-edit-rs}} a~k jejímu sestavení je třeba mít nainstalovaný balíčkovací systém \texttt{cargo}\footnote{\url{https://www.rust-lang.org/tools/install}}.
 
 \bibliographystyle{alpha}
 \begin{flushleft}
