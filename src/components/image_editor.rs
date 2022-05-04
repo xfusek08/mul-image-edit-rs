@@ -1,28 +1,33 @@
 
 use std::sync::Arc;
-use std::time::Instant;
 
-use egui::{Vec2, Layout, vec2};
-use egui::style::Margin;
+use egui::{style::Margin, Vec2};
 use epi::backend::RepaintSignal;
 use indoc::indoc;
 
-use crate::utils::save_output_file;
-use crate::widgets::{texts, BigButton};
 use crate::{
-    utils::{fit_into, format_size},
+    widgets::{texts, BigButton},
+    utils::{save_output_file, fit_into, format_size},
     data::{MultimediaFile, Viewport},
     constants::{RIGHT_PANEL_WIDTH, THUMBNAIL_SIZE}
 };
 
-use super::modifiers::specific::{BMulLumaModifier, GammaModifier};
 use super::{
+    ModifierPipeline,
+    Image,
     modifiers::{
         Slider,
-        specific::{ExposureModifier, ContrastModifier, BlurModifier, SepiaModifier, TintModifier, CustomModifier, BMulModifier}
+        specific::{
+            ExposureModifier,
+            ContrastModifier,
+            BlurModifier,
+            TintModifier,
+            CustomModifier,
+            BMulModifier,
+            BMulLumaModifier,
+            GammaModifier
+        }
     },
-    ModifierPipeline,
-    Image
 };
 
 pub enum EditorResult {
@@ -32,11 +37,7 @@ pub enum EditorResult {
 
 pub struct ImageEditor {
     pipeline: ModifierPipeline,
-    last_view_change_time: Option<Instant>,
     media_file: MultimediaFile,
-    preview_size: Vec2,
-    repaint_signal: Arc<dyn RepaintSignal>,
-    texture: Option<egui::TextureHandle>,
     viewport: Viewport,
 }
 
@@ -61,11 +62,7 @@ impl ImageEditor {
                 pipeline.push_modifier(Box::new(CustomModifier::with_thumbnails(&tm)));
                 
                 Ok(Self {
-                    last_view_change_time: None,
                     media_file,
-                    preview_size,
-                    repaint_signal,
-                    texture: None,
                     viewport,
                     pipeline,
                 })
@@ -162,9 +159,7 @@ impl ImageEditor {
         // right editor panel
         egui::SidePanel::right("editor_panel")
             .min_width(RIGHT_PANEL_WIDTH)
-            // .max_width(RIGHT_PANEL_WIDTH)
             .default_width(RIGHT_PANEL_WIDTH)
-            // .resizable(false)
             .show(ctx,  |ui| {
                 if BigButton::ui(ui, "📂  Open file").clicked() {
                     result = EditorResult::LoadNewImage;
@@ -202,7 +197,11 @@ impl ImageEditor {
                         egui::Frame::none()
                         .shadow(ctx.style().visuals.popup_shadow)
                         .show(ui, |ui| {
-                            self.pipeline.show_current_image(ui);
+                            if ui.ctx().input().key_down(egui::Key::Space) {
+                                self.pipeline.show_original_image(ui);
+                            } else {
+                                self.pipeline.show_current_image(ui);
+                            }
                         });
                     });
         

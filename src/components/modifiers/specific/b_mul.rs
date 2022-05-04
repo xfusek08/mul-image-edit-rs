@@ -1,4 +1,4 @@
-use cgmath::{Vector3, num_traits::Pow};
+
 use image::{GenericImageView, GenericImage};
 
 use crate::components::modifiers::{SliderCommonDataImp, SliderCommonUiImpl, Modifier, Slider, SliderData};
@@ -32,7 +32,7 @@ impl Modifier for BMulModifier {
     fn title(&self) -> &str {
         "Brightness multiply"
     }
-
+    
     fn apply(&self, mut image: crate::components::Image) -> crate::components::Image {
         if !self.enabled() || self.percent() == 1.0 {
             return image;

@@ -79,7 +79,7 @@ impl App {
 impl App {
     
     pub fn ui(&mut self, ctx: &egui::Context, frame: &epi::Frame) {
-
+        
         // render debug bottom paned
         #[cfg(debug_assertions)]
         {

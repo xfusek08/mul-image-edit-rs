@@ -49,8 +49,7 @@ pub trait Slider : Modifier + Default {
 }
 
 // Trait with common implementation for slider Ui
-pub(crate) trait SliderCommonUiImpl : Slider {}
-impl<T: SliderCommonUiImpl> ModifierUi for T {
+pub(crate) trait SliderCommonUiImpl : Slider {
     fn ui(&mut self, ui: &mut egui::Ui) -> ModifierResponse {
         let mut res = ModifierResponse::Nothing;
         
@@ -61,9 +60,9 @@ impl<T: SliderCommonUiImpl> ModifierUi for T {
                 if ui.checkbox(self.enabled_mut(), texts::sized(&l, 20.0)).changed() {
                     res = ModifierResponse::Changed;
                 }
-                ui.add_space(ui.available_width() - 45.0);
+                ui.add_space(ui.available_width() - 55.0);
                 if ui.button(texts::sized("Reset", 17.0)).clicked() {
-                    *self.percent_mut() = T::default().percent();
+                    self.reset();
                     res = ModifierResponse::Changed;
                 }
             });
@@ -98,12 +97,29 @@ impl<T: SliderCommonUiImpl> ModifierUi for T {
                         self.set_percent(percent);
                         res = ModifierResponse::Changed;
                     }
+                    
+                    if self.additional_elements(ui) == ModifierResponse::Changed {
+                        res = ModifierResponse::Changed;
+                    }
                 });
                 draw_image_option!(self.max_thumbnail());
             });
         });
-        
         res
+    }
+    
+    fn additional_elements(&mut self, ui: &mut egui::Ui) -> ModifierResponse {
+        ModifierResponse::Nothing
+    }
+    
+    fn reset(&mut self) {
+        *self.percent_mut() = Self::default().percent();
+    }
+}
+
+impl<T: SliderCommonUiImpl> ModifierUi for T {
+    fn ui(&mut self, ui: &mut egui::Ui) -> ModifierResponse {
+        SliderCommonUiImpl::ui(self, ui)
     }
 }
 

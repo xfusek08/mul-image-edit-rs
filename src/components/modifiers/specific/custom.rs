@@ -1,12 +1,10 @@
 
-use cgmath::{Matrix3, Vector3, InnerSpace, Matrix, Matrix4};
-use egui::{Layout, Align};
-use image::{GenericImageView, GenericImage, Pixel};
+use cgmath::{Matrix3, Vector3, Matrix};
+use image::{GenericImageView, GenericImage};
 
 use crate::constants::THUMBNAIL_SIZE;
-use crate::utils::math::clamp_magnitude;
 use crate::widgets::texts;
-use crate::{utils::math::lramp};
+use crate::utils::math::lramp;
 
 use crate::components::modifiers::{SliderCommonDataImp, Modifier, Slider, SliderData, ModifierUi, ModifierResponse};
 
@@ -44,7 +42,7 @@ impl ModifierUi for CustomModifier {
                 if ui.checkbox(self.enabled_mut(), texts::sized("Custom:", 20.0)).changed() {
                     res = ModifierResponse::Changed;
                 }
-                ui.add_space(ui.available_width() - 45.0);
+                ui.add_space(ui.available_width() - 55.0);
                 if ui.button(texts::sized("Reset", 17.0)).clicked() {
                     let d = Self::default();
                     *self.percent_mut() = d.percent();

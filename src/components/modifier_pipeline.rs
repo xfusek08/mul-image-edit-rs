@@ -138,8 +138,16 @@ impl ModifierPipeline {
     
     pub fn show_current_image(&mut self, ui: &mut egui::Ui) {
         // show image if defined in this order: current ?? base ?? original
-        self.current_image.as_mut()
+        self.current_image
+            .as_mut()
             .unwrap_or(self.base_image.as_mut().unwrap_or(&mut self.original_image))
+            .show_sized(ui, self.preview_size);
+    }
+    
+    pub fn show_original_image(&mut self, ui: &mut egui::Ui) {
+        self.base_image
+            .as_mut()
+            .unwrap_or(&mut self.original_image)
             .show_sized(ui, self.preview_size);
     }
     
@@ -151,6 +159,7 @@ impl ModifierPipeline {
             .iter_mut()
             .enumerate()
             .for_each(|(i, m)| {
+                ui.add_space(10.0);
                 
                 let response = match self.active_index {
                     Some(active_index) if i == active_index => m.show_active(ui),
@@ -171,5 +180,4 @@ impl ModifierPipeline {
             _ => ()
         }
     }
-    
 }
